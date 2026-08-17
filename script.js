@@ -39,8 +39,7 @@ const T = {
     fName:'სახელი',fEmail:'ელ. ფოსტა',fMsg:'შეტყობინება',fSend:'გაგზავნა',sent:'მადლობა! შეტყობინება გაიგზავნა (დემო).',back:'უკან ბლოგზე',
     priv:'კონფიდენციალურობის პოლიტიკა',terms:'გამოყენების წესები',rights:'ყველა უფლება დაცულია',
     privTitle:'კონფიდენციალურობის პოლიტიკა',privLead:'',privP1:'',termsTitle:'გამოყენების წესები',termsLead:'',termsP1:'',viewFull:'სრული დოკუმენტის ნახვა →',
-    cookieText:'საიტი იყენებს cookie-ებს გამოცდილების გასაუმჯობესებლად.',cookieAccept:'კარგი',cookieDecline:'უარყოფა',
-    footSiteH:'საიტი'},
+    cookieText:'საიტი იყენებს cookie-ებს გამოცდილების გასაუმჯობესებლად.',cookieAccept:'კარგი',cookieDecline:'უარყოფა'},
   en:{home:'Home',blog:'Blog',contact:'Contact',coffee:'Coffee',chocolate:'Chocolate',tea:'Tea',viewProduct:'Product details',
     swipeHint:'swipe ←→',
     blogEyebrow:'Journal',blogTitle:'The Blog',contactEyebrow:'Get in touch',contactTitle:'Contact',
@@ -48,8 +47,7 @@ const T = {
     fName:'Name',fEmail:'Email',fMsg:'Message',fSend:'Send message',sent:'Thank you! Your message was sent (demo).',back:'Back to blog',
     priv:'Privacy Policy',terms:'Terms of use',rights:'All Rights Reserved',
     privTitle:'Privacy Policy',privLead:'',privP1:'',termsTitle:'Terms of use',termsLead:'',termsP1:'',viewFull:'View full document →',
-    cookieText:'This site uses cookies to improve your experience.',cookieAccept:'Got it',cookieDecline:'Decline',
-    footSiteH:'Site'}
+    cookieText:'This site uses cookies to improve your experience.',cookieAccept:'Got it',cookieDecline:'Decline'}
 };
 const POSTS = [
   {id:'p1',cat:{ka:'ყავა',en:'Coffee'},c:'#B4472B',c2:'#5F2A1B',date:{ka:'',en:''},title:{ka:'ბლოგის სათაური',en:'Post title'},body:{ka:[''],en:['']}},
@@ -110,7 +108,10 @@ function initCookieBar(){
 
 /* ---------- view-transition helper (progressive enhancement) ---------- */
 function withTransition(fn){
-  if(document.startViewTransition){ document.startViewTransition(fn); } else { fn(); }
+  try{
+    if(document.startViewTransition){ document.startViewTransition(fn); return; }
+  }catch(e){ /* fall through to direct call below */ }
+  fn();
 }
 
 /* ---------- scroll reveal ---------- */
