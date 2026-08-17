@@ -55,6 +55,25 @@ const POSTS = [
   {id:'p3',cat:{ka:'შოკოლადი',en:'Chocolate'},c:'#C63A2F',c2:'#5A2620',date:{ka:'',en:''},title:{ka:'ბლოგის სათაური',en:'Post title'},body:{ka:[''],en:['']}}
 ];
 
+/* ---------- base path ----------
+   This site is currently hosted as a GitHub Pages PROJECT page at
+   geoarchnemesis.github.io/dollscoffee/ - meaning every internal route needs
+   the "/dollscoffee" prefix to resolve correctly. Once a custom domain
+   (e.g. www.dollscoffee.ge) is pointed at this repo's root, change the line
+   below to: const BASE_PATH = '';  (that is the ONLY line that needs to change) */
+const BASE_PATH = '/dollscoffee';
+function withBase(p){
+  if(!BASE_PATH) return p;
+  return p==='/' ? BASE_PATH+'/' : BASE_PATH+p;
+}
+function stripBase(path){
+  if(BASE_PATH && path.indexOf(BASE_PATH)===0){
+    path = path.slice(BASE_PATH.length);
+    if(path==='') path='/';
+  }
+  return path;
+}
+
 let lang='ka', activeCat='coffee', prodIndex=0, currentView='home', currentArticle=null;
 let lastCat='coffee', lastIndex=0;
 
@@ -187,7 +206,7 @@ function go(view, opts){
   };
   withTransition(doIt);
   if(push && PAGE_PATHS[view]!==undefined){
-    try{ history.pushState({view:view}, '', PAGE_PATHS[view]); }catch(e){}
+    try{ history.pushState({view:view}, '', withBase(PAGE_PATHS[view])); }catch(e){}
   }
   window.scrollTo({top:0});
   if(PAGE_PATHS[view]!==undefined){
@@ -280,7 +299,7 @@ function openProductPage(cat,slug,fromUI,push){
   renderProductPage(false);
   go('product', {push:false});
   if(push!==false){
-    try{ history.pushState({view:'product',cat:cat,slug:slug}, '', '/'+cat+'/'+slug); }catch(e){}
+    try{ history.pushState({view:'product',cat:cat,slug:slug}, '', withBase('/'+cat+'/'+slug)); }catch(e){}
   }
   window.scrollTo({top:0});
   updateSEO('/'+cat+'/'+slug, DATA[cat].products[idx].name[lang]);
@@ -305,7 +324,7 @@ function stepProductPage(dir){
   prodIndex=(prodIndex+dir+n)%n;
   const slug=DATA[activeCat].products[prodIndex].slug;
   renderProductPage(true);
-  try{ history.pushState({view:'product',cat:activeCat,slug:slug}, '', '/'+activeCat+'/'+slug); }catch(e){}
+  try{ history.pushState({view:'product',cat:activeCat,slug:slug}, '', withBase('/'+activeCat+'/'+slug)); }catch(e){}
   updateSEO('/'+activeCat+'/'+slug, DATA[activeCat].products[prodIndex].name[lang]);
 }
 function closeProductPage(){
@@ -322,6 +341,7 @@ function closeProductPage(){
 }
 function parseAndApplyRoute(path, push){
   path = (path||'/').replace(/\/+$/,'') || '/';
+  path = stripBase(path);
   const prodMatch = path.match(/^\/(coffee|chocolate|tea)\/([a-z0-9-]+)$/);
   if(prodMatch){ openProductPage(prodMatch[1], prodMatch[2], false, false); return true; }
   const blogMatch = path.match(/^\/blog\/([a-z0-9-]+)$/);
@@ -342,7 +362,7 @@ function renderBlog(){
 function openArticle(id, push){
   currentArticle=id; renderArticle(); go('article', {push:false});
   if(push!==false){
-    try{ history.pushState({view:'article',id:id}, '', '/blog/'+id); }catch(e){}
+    try{ history.pushState({view:'article',id:id}, '', withBase('/blog/'+id)); }catch(e){}
   }
   const p=POSTS.find(function(x){return x.id===id;});
   if(p) updateSEO('/blog/'+id, p.title[lang]);
