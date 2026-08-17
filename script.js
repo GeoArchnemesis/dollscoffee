@@ -39,7 +39,8 @@ const T = {
     fName:'სახელი',fEmail:'ელ. ფოსტა',fMsg:'შეტყობინება',fSend:'გაგზავნა',sent:'მადლობა! შეტყობინება გაიგზავნა (დემო).',back:'უკან ბლოგზე',
     priv:'კონფიდენციალურობის პოლიტიკა',terms:'გამოყენების წესები',rights:'ყველა უფლება დაცულია',
     privTitle:'კონფიდენციალურობის პოლიტიკა',privLead:'',privP1:'',termsTitle:'გამოყენების წესები',termsLead:'',termsP1:'',viewFull:'სრული დოკუმენტის ნახვა →',
-    cookieText:'საიტი იყენებს cookie-ებს გამოცდილების გასაუმჯობესებლად.',cookieAccept:'კარგი',cookieDecline:'უარყოფა'},
+    cookieText:'საიტი იყენებს cookie-ებს გამოცდილების გასაუმჯობესებლად.',cookieAccept:'კარგი',cookieDecline:'უარყოფა',
+    footSiteH:'საიტი'},
   en:{home:'Home',blog:'Blog',contact:'Contact',coffee:'Coffee',chocolate:'Chocolate',tea:'Tea',viewProduct:'Product details',
     swipeHint:'swipe ←→',
     blogEyebrow:'Journal',blogTitle:'The Blog',contactEyebrow:'Get in touch',contactTitle:'Contact',
@@ -47,7 +48,8 @@ const T = {
     fName:'Name',fEmail:'Email',fMsg:'Message',fSend:'Send message',sent:'Thank you! Your message was sent (demo).',back:'Back to blog',
     priv:'Privacy Policy',terms:'Terms of use',rights:'All Rights Reserved',
     privTitle:'Privacy Policy',privLead:'',privP1:'',termsTitle:'Terms of use',termsLead:'',termsP1:'',viewFull:'View full document →',
-    cookieText:'This site uses cookies to improve your experience.',cookieAccept:'Got it',cookieDecline:'Decline'}
+    cookieText:'This site uses cookies to improve your experience.',cookieAccept:'Got it',cookieDecline:'Decline',
+    footSiteH:'Site'}
 };
 const POSTS = [
   {id:'p1',cat:{ka:'ყავა',en:'Coffee'},c:'#B4472B',c2:'#5F2A1B',date:{ka:'',en:''},title:{ka:'ბლოგის სათაური',en:'Post title'},body:{ka:[''],en:['']}},
@@ -121,7 +123,7 @@ function initReveal(){
   }
   revealObserver = new IntersectionObserver((entries)=>{
     entries.forEach(en=>{ if(en.isIntersecting){ en.target.classList.add('in'); revealObserver.unobserve(en.target); } });
-  },{threshold:.12, rootMargin:'0px 0px -40px 0px'});
+  },{threshold:0, rootMargin:'0px 0px 200px 0px'});
 }
 function observeReveal(container){
   initReveal();
@@ -177,7 +179,7 @@ function activateCategory(cat, opts){
 function renderProdList(){
   const wrap=document.getElementById('prod-list'); wrap.innerHTML='';
   DATA[activeCat].products.forEach((p,i)=>{
-    const card=document.createElement('button'); card.className='prod-card tap reveal'; card.style.transitionDelay=(Math.min(i,10)*35)+'ms'; card.onclick=()=>selectProduct(i);
+    const card=document.createElement('button'); card.className='prod-card tap reveal'; card.style.transitionDelay=(Math.min(i,6)*20)+'ms'; card.onclick=()=>selectProduct(i);
     card.innerHTML='<span class="swatch" style="background:linear-gradient(150deg,'+p.c+','+p.c2+')"><span class="badge">New</span><span class="code">'+p.short+'</span></span>'
       +'<span class="rname">'+p.name[lang]+'</span>'
       +'<span class="row-bottom"><span class="rspec">'+p.spec[lang]+'</span>'
@@ -283,7 +285,7 @@ function tryOpenFromHash(){
 
 function renderBlog(){
   const g=document.getElementById('blog-grid'); g.innerHTML='';
-  POSTS.forEach((p,i)=>{const el=document.createElement('article');el.className='post reveal';el.style.transitionDelay=(i*60)+'ms';el.onclick=()=>openArticle(p.id);
+  POSTS.forEach((p,i)=>{const el=document.createElement('article');el.className='post reveal';el.style.transitionDelay=(i*35)+'ms';el.onclick=()=>openArticle(p.id);
     el.innerHTML='<div class="cover" style="background:linear-gradient(135deg,'+p.c+','+p.c2+')"><span class="tag">'+p.cat[lang]+'</span></div><div class="body"><div class="date">'+p.date[lang]+'</div><h3>'+p.title[lang]+'</h3></div>';
     g.appendChild(el);});
   observeReveal(g);
