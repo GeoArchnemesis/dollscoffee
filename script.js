@@ -55,25 +55,6 @@ const POSTS = [
   {id:'p3',cat:{ka:'შოკოლადი',en:'Chocolate'},c:'#C63A2F',c2:'#5A2620',date:{ka:'',en:''},title:{ka:'ბლოგის სათაური',en:'Post title'},body:{ka:[''],en:['']}}
 ];
 
-/* ---------- base path ----------
-   This site is currently hosted as a GitHub Pages PROJECT page at
-   geoarchnemesis.github.io/dollscoffee/ - meaning every internal route needs
-   the "/dollscoffee" prefix to resolve correctly. Once a custom domain
-   (e.g. www.dollscoffee.ge) is pointed at this repo's root, change the line
-   below to: const BASE_PATH = '';  (that is the ONLY line that needs to change) */
-const BASE_PATH = '/dollscoffee';
-function withBase(p){
-  if(!BASE_PATH) return p;
-  return p==='/' ? BASE_PATH+'/' : BASE_PATH+p;
-}
-function stripBase(path){
-  if(BASE_PATH && path.indexOf(BASE_PATH)===0){
-    path = path.slice(BASE_PATH.length);
-    if(path==='') path='/';
-  }
-  return path;
-}
-
 let lang='ka', activeCat='coffee', prodIndex=0, currentView='home', currentArticle=null;
 let lastCat='coffee', lastIndex=0;
 
@@ -100,17 +81,6 @@ function initTheme(){
   applyTheme(t);
 }
 
-/* ---------- SEO: keep title/canonical/og:url in sync with the SPA route ---------- */
-function updateSEO(pathAbs, titleSuffix){
-  const base = "Doll's Coffee";
-  document.title = titleSuffix ? (titleSuffix+' | '+base) : base+' — ყავა, შოკოლადი და ჩაი';
-  const full = 'https://www.dollscoffee.ge'+(pathAbs==='/'?'':pathAbs);
-  const canon = document.querySelector('link[rel="canonical"]');
-  if(canon) canon.setAttribute('href', full);
-  const ogUrl = document.querySelector('meta[property="og:url"]');
-  if(ogUrl) ogUrl.setAttribute('content', full);
-}
-
 /* ---------- mobile menu ---------- */
 function toggleMenu(){
   const menu=document.getElementById('menu'), btn=document.getElementById('burgerBtn');
@@ -118,13 +88,6 @@ function toggleMenu(){
   menu.classList.toggle('open', open);
   btn.classList.toggle('open', open);
   btn.setAttribute('aria-expanded', open ? 'true' : 'false');
-}
-function skipToMain(e){
-  e.preventDefault();
-  const m=document.getElementById('main-content');
-  if(!m) return;
-  m.setAttribute('tabindex','-1');
-  m.focus();
 }
 
 /* ---------- cookie consent ---------- */
@@ -206,13 +169,9 @@ function go(view, opts){
   };
   withTransition(doIt);
   if(push && PAGE_PATHS[view]!==undefined){
-    try{ history.pushState({view:view}, '', withBase(PAGE_PATHS[view])); }catch(e){}
+    try{ history.pushState({view:view}, '', PAGE_PATHS[view]); }catch(e){}
   }
   window.scrollTo({top:0});
-  if(PAGE_PATHS[view]!==undefined){
-    const titleMap={home:null,blog:T[lang].blogTitle,about:T[lang].aboutTitle,contact:T[lang].contactTitle,privacy:T[lang].privTitle,terms:T[lang].termsTitle};
-    updateSEO(PAGE_PATHS[view], titleMap[view]);
-  }
 }
 function setAccent(cat){
   const map={coffee:['--coffee','--coffee-deep','--coffee-soft'],chocolate:['--choc','--choc-deep','--choc-soft'],tea:['--tea','--tea-deep','--tea-soft']};
@@ -299,10 +258,9 @@ function openProductPage(cat,slug,fromUI,push){
   renderProductPage(false);
   go('product', {push:false});
   if(push!==false){
-    try{ history.pushState({view:'product',cat:cat,slug:slug}, '', withBase('/'+cat+'/'+slug)); }catch(e){}
+    try{ history.pushState({view:'product',cat:cat,slug:slug}, '', '/'+cat+'/'+slug); }catch(e){}
   }
   window.scrollTo({top:0});
-  updateSEO('/'+cat+'/'+slug, DATA[cat].products[idx].name[lang]);
 }
 function renderProductPage(crossfade){
   const pack=document.getElementById('pf-pack'), body=document.getElementById('pf-body');
@@ -324,8 +282,7 @@ function stepProductPage(dir){
   prodIndex=(prodIndex+dir+n)%n;
   const slug=DATA[activeCat].products[prodIndex].slug;
   renderProductPage(true);
-  try{ history.pushState({view:'product',cat:activeCat,slug:slug}, '', withBase('/'+activeCat+'/'+slug)); }catch(e){}
-  updateSEO('/'+activeCat+'/'+slug, DATA[activeCat].products[prodIndex].name[lang]);
+  try{ history.pushState({view:'product',cat:activeCat,slug:slug}, '', '/'+activeCat+'/'+slug); }catch(e){}
 }
 function closeProductPage(){
   activateCategory(lastCat||'coffee', {scroll:false});
@@ -341,11 +298,8 @@ function closeProductPage(){
 }
 function parseAndApplyRoute(path, push){
   path = (path||'/').replace(/\/+$/,'') || '/';
-  path = stripBase(path);
   const prodMatch = path.match(/^\/(coffee|chocolate|tea)\/([a-z0-9-]+)$/);
   if(prodMatch){ openProductPage(prodMatch[1], prodMatch[2], false, false); return true; }
-  const blogMatch = path.match(/^\/blog\/([a-z0-9-]+)$/);
-  if(blogMatch && POSTS.some(function(p){return p.id===blogMatch[1];})){ openArticle(blogMatch[1], false); return true; }
   const map={'':'home','/':'home','/blog':'blog','/about':'about','/contact':'contact','/privacy':'privacy','/terms':'terms'};
   const view = map[path];
   if(view){ go(view, {push:push!==false}); return true; }
@@ -359,14 +313,7 @@ function renderBlog(){
     g.appendChild(el);});
   observeReveal(g);
 }
-function openArticle(id, push){
-  currentArticle=id; renderArticle(); go('article', {push:false});
-  if(push!==false){
-    try{ history.pushState({view:'article',id:id}, '', withBase('/blog/'+id)); }catch(e){}
-  }
-  const p=POSTS.find(function(x){return x.id===id;});
-  if(p) updateSEO('/blog/'+id, p.title[lang]);
-}
+function openArticle(id){currentArticle=id;renderArticle();go('article');}
 function renderArticle(){
   if(!currentArticle)return;
   const p=POSTS.find(x=>x.id===currentArticle);
