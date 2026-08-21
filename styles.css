@@ -244,16 +244,17 @@ form{background:var(--paper);border:1px solid var(--line);border-radius:22px;pad
 .cookie-bar .btn:not(.solid):hover{background:rgba(255,255,255,.1);border-color:var(--surface-dark-text)}
 
 footer{flex-shrink:0;background:var(--surface-dark);color:var(--surface-dark-text);margin-top:20px}
-.foot-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:30px;padding:38px 0 10px;border-bottom:1px solid #443830}
-.foot-block h4{font-family:var(--sans);font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--surface-dark-text-soft);margin:0 0 12px;font-weight:600}
-.foot-line{display:block;color:var(--surface-dark-text);font-size:15.5px;font-family:var(--sans);line-height:1.8;cursor:pointer;padding:2px 0;overflow-wrap:anywhere}
+.foot-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:30px;padding:38px 0 10px;border-bottom:1px solid #443830;align-items:start}
+.foot-block{display:flex;flex-direction:column;gap:8px}
+.foot-block h4{font-family:var(--sans);font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--surface-dark-text-soft);margin:0 0 4px;font-weight:600}
+.foot-line{display:block;color:var(--surface-dark-text);font-size:15.5px;font-family:var(--sans);line-height:1.4;cursor:pointer;overflow-wrap:anywhere}
 .foot-line:hover{color:#fff}
 .foot-nav-btns{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
 .foot-nav-btn{display:inline-flex;align-items:center;justify-content:center;width:auto;background:transparent;border:1px solid rgba(255,255,255,.24);color:var(--surface-dark-text);font-family:var(--sans);font-size:13.5px;font-weight:600;letter-spacing:.01em;padding:9px 20px;border-radius:999px;cursor:pointer;white-space:nowrap}
-.foot-nav-btn:hover,.foot-nav-btn.active{background:var(--accent);border-color:var(--accent);color:#fff}
-.foot-social{display:flex;gap:8px;margin-top:12px}
+.foot-social{display:flex;gap:8px}
 .foot-social-btn{width:34px;height:34px;border-radius:50%;background:rgba(255,255,255,.08);color:var(--surface-dark-text);display:grid;place-items:center;transition:background .2s ease,color .2s ease}
 .foot-social-btn:hover{background:var(--accent);color:#fff}
+.foot-nav-btn:hover,.foot-nav-btn.active{background:var(--accent);border-color:var(--accent);color:#fff}
 @media (max-width:900px){.foot-grid{grid-template-columns:repeat(2,1fr);gap:26px 20px}}
 @media (max-width:480px){.foot-grid{grid-template-columns:1fr;gap:22px}}
 .foot-in{display:flex;align-items:center;justify-content:space-between;gap:24px;flex-wrap:wrap;padding:30px 0}
