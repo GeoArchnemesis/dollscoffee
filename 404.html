@@ -2,6 +2,26 @@
 <html lang="ka">
 <head>
 <meta charset="UTF-8">
+<script>
+/* ============================================================
+   AUTOMATIC base-path detection - no manual configuration.
+   On a GitHub Pages PROJECT page (username.github.io/repo/...),
+   the repo name is always the first path segment right after the
+   domain, whether at the root or a deep link (via 404.html) - so
+   we read it straight from the current URL. Everywhere else
+   (custom domain, Netlify, local Live Server, 127.0.0.1, etc.)
+   the site is served from its own root, so BASE_PATH is empty.
+   ============================================================ */
+(function(){
+  var base = '';
+  if (location.hostname.endsWith('.github.io')) {
+    var seg = location.pathname.split('/').filter(Boolean)[0];
+    if (seg) base = '/' + seg;
+  }
+  window.BASE_PATH = base;
+  document.write('<link rel="stylesheet" href="'+base+'/styles.css?v=5">');
+})();
+</script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#F3E9DA">
 <meta name="robots" content="index, follow">
@@ -23,13 +43,12 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Instrument+Sans:wght@400;500;600&family=Noto+Serif+Georgian:wght@400;500;600;700&family=Noto+Sans+Georgian:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/dollscoffee/styles.css?v=2">
 </head>
 <body>
 <a href="#main-content" class="skip-link" onclick="skipToMain(event)">გამოტოვე ნავიგაცია და გადადი კონტენტზე</a>
 <header>
   <div class="wrap nav">
-    <button class="brand tap" onclick="go('home')"><img src="/dollscoffee/logo.png" alt="Doll's Coffee logo" class="brand-logo" width="40" height="40"><span class="mark">Dolls<b>Coffee</b></span></button>
+    <button class="brand tap" onclick="go('home')"><img data-base-src="/logo.png" alt="Doll's Coffee logo" class="brand-logo" width="40" height="40"><span class="mark">Dolls<b>Coffee</b></span></button>
     <nav class="menu" id="menu">
       <a data-nav="home" onclick="go('home')"></a>
       <a data-nav="blog" onclick="go('blog')"></a>
@@ -42,8 +61,8 @@
         <svg class="ico sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path></svg>
       </button>
       <div class="lang">
-        <button id="ka" onclick="setLang('ka')">GE</button>
-        <button id="en" onclick="setLang('en')">EN</button>
+        <button id="ka" onclick="toggleLang()" aria-label="ქართული ენის არჩევა">GE</button>
+        <button id="en" onclick="toggleLang()" aria-label="Switch to English">EN</button>
       </div>
       <button class="burger tap" id="burgerBtn" onclick="toggleMenu()" aria-label="menu" aria-expanded="false">
         <svg class="ico burger-open" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" x2="20" y1="12" y2="12"></line><line x1="4" x2="20" y1="6" y2="6"></line><line x1="4" x2="20" y1="18" y2="18"></line></svg>
@@ -54,6 +73,12 @@
 </header>
 <main id="main-content">
 <section class="page show" id="page-home">
+  <div class="hero" id="hero" role="region" aria-label="ბრენდის ფოტოები">
+    <div class="hero-slides" id="heroSlides"></div>
+    <button class="hero-arrow prev" onclick="heroStep(-1)" aria-label="წინა ფოტო"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg></button>
+    <button class="hero-arrow next" onclick="heroStep(1)" aria-label="შემდეგი ფოტო"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg></button>
+    <div class="hero-dots" id="heroDots"></div>
+  </div>
   <div class="wrap selector">
     <div class="cats">
       <button class="cat-btn tap c-coffee" data-cat="coffee" onclick="activateCategory('coffee',{scroll:false})" data-t="coffee"></button>
@@ -128,11 +153,11 @@
 </section>
 <section class="page" id="page-privacy">
   <div class="wrap legal"><h1 data-t="privTitle"></h1><p class="lead" data-t="privLead"></p><p data-t="privP1"></p>
-    <a class="btn official tap" href="https://avek.gr/en/privacy-policy/" target="_blank" rel="noopener" data-t="viewFull"></a></div>
+    <a class="btn official tap" href="https://avek.gr/en/privacy-policy/" target="_blank" rel="noopener"><span data-t="viewFull"></span><span class="arrow-move">→</span></a></div>
 </section>
 <section class="page" id="page-terms">
   <div class="wrap legal"><h1 data-t="termsTitle"></h1><p class="lead" data-t="termsLead"></p><p data-t="termsP1"></p>
-    <a class="btn official tap" href="https://avek.gr/en/oroi-xrisis/" target="_blank" rel="noopener" data-t="viewFull"></a></div>
+    <a class="btn official tap" href="https://avek.gr/en/oroi-xrisis/" target="_blank" rel="noopener"><span data-t="viewFull"></span><span class="arrow-move">→</span></a></div>
 </section>
 </main>
 
@@ -169,8 +194,8 @@
   </div>
   <div class="wrap foot-in">
     <div class="foot-logos">
-      <img src="/dollscoffee/eu-cofunded.png" alt="Co-funded by the European Union" width="300" height="48">
-      <img src="/dollscoffee/espa-logo.png" alt="ESPA 2021-2027" width="400" height="93">
+      <img data-base-src="/eu-cofunded.png" alt="Co-funded by the European Union" width="300" height="48">
+      <img data-base-src="/espa-logo.png" alt="ESPA 2021-2027" width="400" height="93">
     </div>
     <div class="foot-links">
       <a onclick="go('privacy')" data-t="priv"></a>
@@ -179,6 +204,6 @@
   </div>
   <div class="wrap foot-bottom"><span>© 2026</span><span>·</span><span>dollscoffee.ge</span><span>·</span><span data-t="rights"></span></div>
 </footer>
-<script src="/dollscoffee/script.js?v=2" defer></script>
+<script>document.write('<script src="'+window.BASE_PATH+'/script.js?v=5" defer><\/script>');</script>
 </body>
 </html>
