@@ -1,564 +1,221 @@
-/* Hero slides: placeholder gradients for now. To use a real photo, replace
-   {c,c2} with {img:'/photos/hero-1.jpg'} - renderHero() already handles both. */
-const HERO_SLIDES = [
-  {id:'s1', c:'#B4472B', c2:'#5F2A1B'},
-  {id:'s2', c:'#8A5A2E', c2:'#3D2311'},
-  {id:'s3', c:'#3E6B4F', c2:'#233E2C'}
-];
-
-const DATA = {
-  coffee:{products:[
-    {slug:'blend-6',short:'BLEND 6',c:'#2E5A46',c2:'#1E3B67',name:{ka:'ესპრესო 100% არაბიკა · Blend 6',en:'Espresso 100% Arabica · Blend 6'},spec:{ka:'1კგ',en:'1kg'},desc:{ka:'',en:''}},
-    {slug:'blend-9c',short:'BLEND 9C',c:'#7A2E43',c2:'#C77088',name:{ka:'ესპრესო 100% არაბიკა · Blend 9C',en:'Espresso 100% Arabica · Blend 9C'},spec:{ka:'1კგ',en:'1kg'},desc:{ka:'',en:''}},
-    {slug:'blend-12',short:'BLEND 12',c:'#7E2D22',c2:'#43264A',name:{ka:'ესპრესო 100% არაბიკა · Blend 12',en:'Espresso 100% Arabica · Blend 12'},spec:{ka:'1კგ',en:'1kg'},desc:{ka:'',en:''}},
-    {slug:'decaf',short:'DECAF',c:'#6B4A3A',c2:'#3E2A20',name:{ka:'ესპრესო უკოფეინო · Decaf',en:'Espresso Decaf'},spec:{ka:'250გ',en:'250g'},desc:{ka:'',en:''}},
-    {slug:'greek-aristos',short:'GREEK',c:'#C99A3C',c2:'#8A6420',name:{ka:'ბერძნული ყავა · ღია მოხალვა «Aristos»',en:'Greek Coffee · Blonde “Aristos”'},spec:{ka:'500გ',en:'500g'},desc:{ka:'',en:''}},
-    {slug:'colombia',short:'COLOMBIA',c:'#5A3A28',c2:'#2E1D14',name:{ka:'ფილტრის ყავა · Colombia',en:'Filter Coffee · Colombia'},spec:{ka:'',en:''},desc:{ka:'',en:''}}
-  ]},
-  chocolate:{products:[
-    {slug:'hazelnut',short:'HAZELNUT',c:'#C77FB0',c2:'#2C3E8C',name:{ka:'თხილი · Chocolulu',en:'Hazelnut · Chocolulu'},spec:{ka:'400გ',en:'400g'},desc:{ka:'',en:''}},
-    {slug:'salted-caramel',short:'SALTED CARAMEL',c:'#E39A2C',c2:'#1F7A82',name:{ka:'მარილიანი კარამელი · Chocolulu',en:'Salted Caramel · Chocolulu'},spec:{ka:'400გ',en:'400g'},desc:{ka:'',en:''}},
-    {slug:'banana',short:'BANANA',c:'#E0651F',c2:'#5A3620',name:{ka:'არაქისის კარაქი & ბანანი · Chocolulu',en:'Peanut Butter Banana · Chocolulu'},spec:{ka:'400გ',en:'400g'},desc:{ka:'',en:''}},
-    {slug:'strawberry',short:'STRAWBERRY',c:'#7CC63A',c2:'#7B3FA0',name:{ka:'მარწყვი · Chocolulu',en:'Strawberry · Chocolulu'},spec:{ka:'400გ',en:'400g'},desc:{ka:'',en:''}},
-    {slug:'lemon-pie',short:'LEMON PIE',c:'#3FA9E0',c2:'#2E8B3C',name:{ka:'ლიმონის ღვეზელი · Chocolulu',en:'Lemon Pie · Chocolulu'},spec:{ka:'400გ',en:'400g'},desc:{ka:'',en:''}},
-    {slug:'golden',short:'GOLDEN',c:'#D98A2B',c2:'#B4472B',name:{ka:'Golden · Chocolulu',en:'Golden · Chocolulu'},spec:{ka:'1კგ',en:'1kg'},desc:{ka:'',en:''}},
-    {slug:'white',short:'WHITE',c:'#D98C93',c2:'#B0616B',name:{ka:'White · Chocolulu',en:'White · Chocolulu'},spec:{ka:'1კგ',en:'1kg'},desc:{ka:'',en:''}},
-    {slug:'cool-mocha',short:'COOL MOCHA',c:'#6F4A34',c2:'#3A2418',name:{ka:'Cool Mocha Choc',en:'Cool Mocha Choc'},spec:{ka:'1კგ',en:'1kg'},desc:{ka:'',en:''}}
-  ]},
-  tea:{products:[
-    {slug:'earl-grey',short:'EARL GREY',c:'#8C8A97',c2:'#5A5866',name:{ka:'ერლ გრეი',en:'Earl Grey'},spec:{ka:'15 ც',en:'15 pcs'},desc:{ka:'',en:''}},
-    {slug:'jasmine',short:'JASMINE',c:'#B7C24A',c2:'#8DA02F',name:{ka:'ჟასმინი',en:'Jasmine'},spec:{ka:'15 ც',en:'15 pcs'},desc:{ka:'',en:''}},
-    {slug:'summer-fruits',short:'SUMMER FRUITS',c:'#D5657F',c2:'#A23F5A',name:{ka:'საზაფხულო ხილი',en:'Summer Fruits'},spec:{ka:'15 ც',en:'15 pcs'},desc:{ka:'',en:''}},
-    {slug:'green-tea',short:'GREEN TEA',c:'#5FA33F',c2:'#3B6E27',name:{ka:'მწვანე ჩაი',en:'Green Tea'},spec:{ka:'15 ც',en:'15 pcs'},desc:{ka:'',en:''}},
-    {slug:'camomile',short:'CAMOMILE',c:'#E0C36A',c2:'#C99A3C',name:{ka:'გვირილა',en:'Pure Camomile'},spec:{ka:'15 ც',en:'15 pcs'},desc:{ka:'',en:''}},
-    {slug:'peppermint',short:'PEPPERMINT',c:'#2E8B9E',c2:'#1C5966',name:{ka:'პიტნა',en:'Peppermint'},spec:{ka:'15 ც',en:'15 pcs'},desc:{ka:'',en:''}},
-    {slug:'english-breakfast',short:'ENGLISH BREAKFAST',c:'#4A6FA5',c2:'#2E4468',name:{ka:'English Breakfast',en:'English Breakfast'},spec:{ka:'',en:''},desc:{ka:'',en:''}},
-    {slug:'gunpowder',short:'GUNPOWDER',c:'#3E6B4F',c2:'#233E2C',name:{ka:'მწვანე «China Gunpowder»',en:'Green “China Gunpowder”'},spec:{ka:'',en:''},desc:{ka:'',en:''}},
-    {slug:'vanilla',short:'VANILLA',c:'#D8C39A',c2:'#A8895E',name:{ka:'ვანილი',en:'Vanilla'},spec:{ka:'',en:''},desc:{ka:'',en:''}},
-    {slug:'apple-ginger',short:'APPLE-GINGER',c:'#D2622E',c2:'#8A3A18',name:{ka:'ვაშლი-ჯანჯაფილი',en:'Apple-Ginger'},spec:{ka:'დაბალი მჟავიანობა',en:'Low acid'},desc:{ka:'',en:''}},
-    {slug:'spiced-chai',short:'SPICED CHAI',c:'#C0392B',c2:'#7C2318',name:{ka:'სანელებლიანი ჩაი',en:'Spiced Chai'},spec:{ka:'250გ',en:'250g'},desc:{ka:'',en:''}}
-  ]}
-};
-const T = {
-  ka:{home:'მთავარი',blog:'ბლოგი',contact:'კონტაქტი',about:'ჩვენს შესახებ',coffee:'ყავა',chocolate:'შოკოლადი',tea:'ჩაი',viewProduct:'პროდუქტის დეტალები',
-    blogEyebrow:'ჟურნალი',blogTitle:'ბლოგი',contactEyebrow:'დაგვიკავშირდი',contactTitle:'კონტაქტი',
-    aboutEyebrow:'გავიცანით ერთმანეთი',aboutTitle:'ჩვენს შესახებ',aboutLead:'',
-    phone:'ტელეფონი',address:'მისამართი',addressVal:'საქართველო, თბილისი, ვასილ კოპცოვის 34ბ',partnerK:'პარტნიორი',
-    fName:'სახელი',fEmail:'ელ. ფოსტა',fMsg:'შეტყობინება',fSend:'გაგზავნა',sent:'მადლობა! შეტყობინება გაიგზავნა (დემო).',back:'უკან ბლოგზე',
-    priv:'კონფიდენციალურობის პოლიტიკა',terms:'გამოყენების წესები',rights:'ყველა უფლება დაცულია',
-    privTitle:'კონფიდენციალურობის პოლიტიკა',privLead:'',privP1:'',termsTitle:'გამოყენების წესები',termsLead:'',termsP1:'',viewFull:'სრული დოკუმენტის ნახვა',
-    cookieText:'საიტი იყენებს cookie-ებს გამოცდილების გასაუმჯობესებლად.',cookieAccept:'კარგი',cookieDecline:'უარყოფა',
-    marqueeText:'· 100% არაბიკა · AVEK-ის ოფიციალური პარტნიორი, საბერძნეთი · ხელით შერჩეული ბლენდები ',
-    footTbilisiHeading:'საქართველო, თბილისი',footTbilisiAddress:'ვასილ კოპცოვის 34ბ',footAthensHeading:'საბერძნეთი, ათენი',
-    heroPlaceholder:'ფოტო მალე დაემატება'},
-  en:{home:'Home',blog:'Blog',contact:'Contact',about:'About Us',coffee:'Coffee',chocolate:'Chocolate',tea:'Tea',viewProduct:'Product details',
-    blogEyebrow:'Journal',blogTitle:'The Blog',contactEyebrow:'Get in touch',contactTitle:'Contact',
-    aboutEyebrow:'Get to know us',aboutTitle:'About Us',aboutLead:'',
-    phone:'Phone',address:'Address',addressVal:'34b Vasil Koptsovi St, Tbilisi, Georgia',partnerK:'Partner',
-    fName:'Name',fEmail:'Email',fMsg:'Message',fSend:'Send message',sent:'Thank you! Your message was sent (demo).',back:'Back to blog',
-    priv:'Privacy Policy',terms:'Terms of use',rights:'All Rights Reserved',
-    privTitle:'Privacy Policy',privLead:'',privP1:'',termsTitle:'Terms of use',termsLead:'',termsP1:'',viewFull:'View full document',
-    cookieText:'This site uses cookies to improve your experience.',cookieAccept:'Got it',cookieDecline:'Decline',
-    marqueeText:'· 100% Arabica · Official partner of AVEK, Greece · Hand-selected blends ',
-    footTbilisiHeading:'Georgia, Tbilisi',footTbilisiAddress:'34b Vasil Koptsovi St',footAthensHeading:'Greece, Athens',
-    heroPlaceholder:'Photo coming soon'}
-};
-const POSTS = [
-  {id:'p1',cat:{ka:'ყავა',en:'Coffee'},c:'#B4472B',c2:'#5F2A1B',date:{ka:'',en:''},title:{ka:'ბლოგის სათაური',en:'Post title'},body:{ka:[''],en:['']}},
-  {id:'p2',cat:{ka:'ჩაი',en:'Tea'},c:'#3E6B4F',c2:'#233E2C',date:{ka:'',en:''},title:{ka:'ბლოგის სათაური',en:'Post title'},body:{ka:[''],en:['']}},
-  {id:'p3',cat:{ka:'შოკოლადი',en:'Chocolate'},c:'#C63A2F',c2:'#5A2620',date:{ka:'',en:''},title:{ka:'ბლოგის სათაური',en:'Post title'},body:{ka:[''],en:['']}}
-];
-
-/* ---------- base path ----------
-   BASE_PATH is computed automatically, once, in index.html/404.html's
-   <head> (window.BASE_PATH), based on the current hostname/URL. This
-   file only reads it - it is never hardcoded here or anywhere else. */
-const BASE_PATH = window.BASE_PATH || '';
-function withBase(p){
-  if(!BASE_PATH) return p;
-  return p==='/' ? BASE_PATH+'/' : BASE_PATH+p;
-}
-function stripBase(path){
-  if(BASE_PATH && path.indexOf(BASE_PATH)===0){
-    path = path.slice(BASE_PATH.length);
-    if(path==='') path='/';
+<!DOCTYPE html>
+<html lang="ka">
+<head>
+<meta charset="UTF-8">
+<script>
+/* ============================================================
+   AUTOMATIC base-path detection - no manual configuration.
+   On a GitHub Pages PROJECT page (username.github.io/repo/...),
+   the repo name is always the first path segment right after the
+   domain, whether at the root or a deep link (via 404.html) - so
+   we read it straight from the current URL. Everywhere else
+   (custom domain, Netlify, local Live Server, 127.0.0.1, etc.)
+   the site is served from its own root, so BASE_PATH is empty.
+   ============================================================ */
+(function(){
+  var base = '';
+  if (location.hostname.endsWith('.github.io')) {
+    var seg = location.pathname.split('/').filter(Boolean)[0];
+    if (seg) base = '/' + seg;
   }
-  return path;
-}
-
-let lang='ka', activeCat='coffee', prodIndex=0, currentView='home', currentArticle=null;
-let lastCat='coffee', lastIndex=0;
-
-/* ---------- theme ---------- */
-function applyTheme(t){
-  document.documentElement.setAttribute('data-theme', t);
-  const mc = document.querySelector('meta[name="theme-color"]');
-  if(mc) mc.setAttribute('content', t==='dark' ? '#1B1512' : '#F3E9DA');
-  try{ localStorage.setItem('doc-theme', t); }catch(e){}
-}
-function toggleTheme(){
-  const cur = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
-  applyTheme(cur === 'dark' ? 'light' : 'dark');
-}
-function initTheme(){
-  let t='light';
-  try{
-    const saved = localStorage.getItem('doc-theme');
-    if(saved){ t=saved; }
-    /* intentionally NOT checking prefers-color-scheme here: the site always
-       starts in light mode by default; dark mode only activates if the
-       visitor has explicitly turned it on before (saved in localStorage). */
-  }catch(e){}
-  applyTheme(t);
-}
-
-/* ---------- SEO: keep title/canonical/og:url in sync with the SPA route ---------- */
-function updateSEO(pathAbs, titleSuffix){
-  const base = "Doll's Coffee";
-  document.title = titleSuffix ? (titleSuffix+' | '+base) : base+' — ყავა, შოკოლადი და ჩაი';
-  const full = 'https://www.dollscoffee.ge'+(pathAbs==='/'?'':pathAbs);
-  const canon = document.querySelector('link[rel="canonical"]');
-  if(canon) canon.setAttribute('href', full);
-  const ogUrl = document.querySelector('meta[property="og:url"]');
-  if(ogUrl) ogUrl.setAttribute('content', full);
-}
-
-/* ---------- mobile menu ---------- */
-function toggleMenu(){
-  const menu=document.getElementById('menu'), btn=document.getElementById('burgerBtn');
-  const open = !menu.classList.contains('open');
-  menu.classList.toggle('open', open);
-  btn.classList.toggle('open', open);
-  btn.setAttribute('aria-expanded', open ? 'true' : 'false');
-}
-function skipToMain(e){
-  e.preventDefault();
-  const m=document.getElementById('main-content');
-  if(!m) return;
-  m.setAttribute('tabindex','-1');
-  m.focus();
-}
-
-/* ---------- cookie consent ---------- */
-function acceptCookies(){
-  try{ localStorage.setItem('cookie-consent','accepted'); }catch(e){}
-  const bar=document.getElementById('cookieBar');
-  if(bar) bar.hidden=true;
-}
-function declineCookies(){
-  try{ localStorage.setItem('cookie-consent','declined'); }catch(e){}
-  const bar=document.getElementById('cookieBar');
-  if(bar) bar.hidden=true;
-}
-function initCookieBar(){
-  let decided=false;
-  try{ decided = !!localStorage.getItem('cookie-consent'); }catch(e){}
-  const bar=document.getElementById('cookieBar');
-  if(bar) bar.hidden = decided;
-}
-
-/* ---------- view-transition helper (progressive enhancement) ---------- */
-function withTransition(fn){
-  try{
-    if(document.startViewTransition){ document.startViewTransition(fn); return; }
-  }catch(e){ /* fall through to direct call below */ }
-  fn();
-}
-
-/* ---------- scroll reveal ---------- */
-let revealObserver=null;
-function initReveal(){
-  if(revealObserver) return;
-  if(!('IntersectionObserver' in window)){
-    document.querySelectorAll('.reveal').forEach(el=>el.classList.add('in'));
-    return;
-  }
-  revealObserver = new IntersectionObserver((entries)=>{
-    entries.forEach(en=>{ if(en.isIntersecting){ en.target.classList.add('in'); revealObserver.unobserve(en.target); } });
-  },{threshold:0, rootMargin:'0px 0px 200px 0px'});
-}
-function observeReveal(container){
-  initReveal();
-  if(!revealObserver){ container.querySelectorAll('.reveal').forEach(el=>el.classList.add('in')); return; }
-  container.querySelectorAll('.reveal:not(.in)').forEach(el=>revealObserver.observe(el));
-}
-
-/* ---------- language ----------
-   NOTE: earlier versions tried to rewrite the URL path (e.g. appending /ka or /en)
-   using history.replaceState. On a static single HTML file this produces an
-   invalid path like ".../dollscoffee.html/ka", which the browser cannot resolve
-   and effectively reloads/breaks navigation. Language switching is UI-only here;
-   it never touches the URL. (A real multi-page build, e.g. Astro, would serve
-   /ka and /en as actual routes instead.) */
-/* ---------- hero: standard slider (arrows + dots), auto-advances every 5s
-   unless the visitor navigates manually, in which case the timer restarts ---------- */
-let heroIndex=0, heroTimer=null;
-function renderHero(){
-  const slidesEl=document.getElementById('heroSlides');
-  const dotsEl=document.getElementById('heroDots');
-  if(!slidesEl) return;
-  slidesEl.innerHTML = HERO_SLIDES.map(function(s,i){
-    const bg = s.img
-      ? "background-image:url('"+s.img+"');background-size:cover;background-position:center;"
-      : "background:linear-gradient(135deg,"+s.c+","+s.c2+");";
-    const tag = s.img ? '' : '<span class="hero-placeholder-tag">'+T[lang].heroPlaceholder+'</span>';
-    return '<div class="hero-slide'+(i===0?' active':'')+'" style="'+bg+'">'+tag+'</div>';
-  }).join('');
-  if(dotsEl){
-    dotsEl.innerHTML = HERO_SLIDES.map(function(_,i){
-      return '<button class="'+(i===0?'on':'')+'" aria-label="ფოტო '+(i+1)+'" onclick="goToHeroSlide('+i+')"></button>';
-    }).join('');
-  }
-  heroIndex=0;
-}
-function setHeroSlide(i){
-  const slides=document.querySelectorAll('#heroSlides .hero-slide');
-  const dots=document.querySelectorAll('#heroDots button');
-  if(!slides.length) return;
-  slides[heroIndex] && slides[heroIndex].classList.remove('active');
-  dots[heroIndex] && dots[heroIndex].classList.remove('on');
-  heroIndex=(i+slides.length)%slides.length;
-  slides[heroIndex].classList.add('active');
-  if(dots[heroIndex]) dots[heroIndex].classList.add('on');
-}
-function heroStep(dir){ setHeroSlide(heroIndex+dir); startHeroRotation(); }
-function goToHeroSlide(i){ setHeroSlide(i); startHeroRotation(); }
-function startHeroRotation(){
-  clearInterval(heroTimer);
-  if(HERO_SLIDES.length < 2) return;
-  if(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-  heroTimer=setInterval(function(){ setHeroSlide(heroIndex+1); }, 5000);
-}
-
-function toggleLang(){ setLang(lang==='ka' ? 'en' : 'ka'); }
-function setLang(l){
-  lang=l; document.documentElement.lang=l;
-  document.getElementById('ka').classList.toggle('active',l==='ka');
-  document.getElementById('en').classList.toggle('active',l==='en');
-  document.querySelectorAll('#hero .hero-placeholder-tag').forEach(function(el){ el.textContent=T[lang].heroPlaceholder; });
-  renderText();
-  renderProdList();
-  if(!document.getElementById('detail').classList.contains('hidden')) renderDetail(true);
-  if(currentView==='product') renderProductPage(true);
-  renderBlog(); renderArticle();
-}
-function renderText(){
-  document.querySelectorAll('[data-t]').forEach(el=>{const v=T[lang][el.dataset.t];if(v!==undefined)el.textContent=v;});
-  document.querySelectorAll('[data-nav]').forEach(a=>{a.textContent=T[lang][a.dataset.nav];a.classList.toggle('active',a.dataset.nav===currentView);});
-}
-const PAGE_PATHS={home:'/',blog:'/blog',about:'/about',contact:'/contact',privacy:'/privacy',terms:'/terms'};
-function go(view, opts){
-  opts = opts || {};
-  const push = opts.push!==false;
-  const doIt=function(){
-    currentView=view;
-    ['home','blog','about','contact','article','privacy','terms','product'].forEach(v=>document.getElementById('page-'+v).classList.toggle('show',v===view));
-    document.getElementById('menu').classList.remove('open');
-    document.getElementById('burgerBtn').classList.remove('open');
-    document.getElementById('burgerBtn').setAttribute('aria-expanded','false');
-    document.querySelectorAll('[data-nav]').forEach(a=>a.classList.toggle('active',a.dataset.nav===view));
-  };
-  withTransition(doIt);
-  if(push && PAGE_PATHS[view]!==undefined){
-    try{ history.pushState({view:view}, '', withBase(PAGE_PATHS[view])); }catch(e){}
-  }
-  window.scrollTo({top:0});
-  if(PAGE_PATHS[view]!==undefined){
-    const titleMap={home:null,blog:T[lang].blogTitle,about:T[lang].aboutTitle,contact:T[lang].contactTitle,privacy:T[lang].privTitle,terms:T[lang].termsTitle};
-    updateSEO(PAGE_PATHS[view], titleMap[view]);
-  }
-}
-function setAccent(cat){
-  const map={coffee:['--coffee','--coffee-deep','--coffee-soft'],chocolate:['--choc','--choc-deep','--choc-soft'],tea:['--tea','--tea-deep','--tea-soft']};
-  const a=map[cat][0],d=map[cat][1],s=map[cat][2],r=document.documentElement.style;
-  r.setProperty('--accent','var('+a+')');r.setProperty('--accent-deep','var('+d+')');r.setProperty('--accent-soft','var('+s+')');
-}
-/* ---------- inline row placement for the detail slider ----------
-   Instead of always living in a fixed spot after the whole grid, #detail
-   is physically moved to sit right after the row containing the selected
-   product - so it opens directly beneath that row, and closes/reopens
-   in the new row when a different product (in a different row) is picked. */
-function getColumnCount(){
-  const w = window.innerWidth;
-  if(w >= 1000) return 4;
-  if(w >= 640) return 3;
-  return 2;
-}
-function insertDetailAfterRow(i){
-  const grid = document.getElementById('prod-list');
-  const cards = grid.querySelectorAll('.prod-card');
-  if(!cards.length) return;
-  const cols = getColumnCount();
-  const row = Math.floor(i / cols);
-  const lastIndexInRow = Math.min((row+1)*cols - 1, cards.length - 1);
-  const anchorCard = cards[lastIndexInRow];
-  const detail = document.getElementById('detail');
-  const nextEl = anchorCard.nextSibling;
-  if(nextEl !== detail){ grid.insertBefore(detail, nextEl); }
-}
-
-function insertDetailAtEnd(){
-  const grid=document.getElementById('prod-list');
-  const detail=document.getElementById('detail');
-  grid.appendChild(detail);
-}
-function activateCategory(cat, opts){
-  opts = opts || {};
-  activeCat=cat; setAccent(cat);
-  document.querySelectorAll('.cat-btn').forEach(b=>b.classList.toggle('active',b.dataset.cat===cat));
-  renderProdList();
-  prodIndex=0;
-  insertDetailAtEnd();
-  document.getElementById('detail').classList.remove('hidden');
-  renderDetail(false);
-  if(opts.scroll) setTimeout(()=>document.getElementById('list-section').scrollIntoView({behavior:'smooth'}),40);
-}
-function renderProdList(){
-  const wrap=document.getElementById('prod-list');
-  const detailEl=document.getElementById('detail');
-  if(detailEl.parentNode===wrap){ document.getElementById('list-section').appendChild(detailEl); }
-  wrap.innerHTML='';
-  DATA[activeCat].products.forEach((p,i)=>{
-    const card=document.createElement('button'); card.className='prod-card tap reveal'; card.style.transitionDelay=(Math.min(i,6)*20)+'ms'; card.onclick=()=>selectProduct(i);
-    card.innerHTML='<span class="swatch" style="background:linear-gradient(150deg,'+p.c+','+p.c2+')"><span class="badge">New</span><span class="code">'+p.short+'</span></span>'
-      +'<span class="rname">'+p.name[lang]+'</span>'
-      +'<span class="row-bottom"><span class="rspec">'+p.spec[lang]+'</span>'
-      +'<svg class="ico chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg></span>';
-    wrap.appendChild(card);
-  });
-  observeReveal(wrap);
-}
-function selectProduct(i){
-  const cards=document.querySelectorAll('#prod-list .prod-card');
-  const swatch=cards[i] ? cards[i].querySelector('.swatch') : null;
-  const pack=document.getElementById('d-pack');
-  const canMorph = !!(swatch && document.startViewTransition);
-
-  const openIt=function(){
-    insertDetailAfterRow(i);
-    prodIndex=i;
-    document.getElementById('detail').classList.remove('hidden');
-    renderDetail(false, true);
-  };
-  const scrollIn=function(){
-    requestAnimationFrame(function(){
-      requestAnimationFrame(function(){
-        document.getElementById('detail').scrollIntoView({behavior:'smooth', block:'start'});
-      });
-    });
-  };
-
-  if(canMorph){
-    swatch.style.viewTransitionName='product-hero-image';
-    const vt=document.startViewTransition(function(){
-      openIt();
-      swatch.style.viewTransitionName='';
-      pack.style.viewTransitionName='product-hero-image';
-    });
-    scrollIn();
-    vt.finished.finally(function(){ pack.style.viewTransitionName=''; });
-  } else {
-    openIt(); scrollIn();
-  }
-}
-function stepProduct(dir){const n=DATA[activeCat].products.length;prodIndex=(prodIndex+dir+n)%n;renderDetail(true);}
-
-/* staggered reveal: fades/lifts a list of elements in sequence rather than all at once */
-function staggerReveal(els, stepMs){
-  els.forEach(function(el,i){
-    if(!el) return;
-    el.classList.remove('in');
-    el.classList.add('reveal');
-    el.style.transitionDelay=(i*stepMs)+'ms';
-  });
-  requestAnimationFrame(function(){
-    requestAnimationFrame(function(){
-      els.forEach(function(el){ if(el) el.classList.add('in'); });
-    });
-  });
-}
-
-function renderDetail(crossfade, stagger){
-  const pack=document.getElementById('d-pack'), body=document.getElementById('detail-body');
-  const paint=function(){
-    const p=DATA[activeCat].products[prodIndex];
-    document.getElementById('d-cat').textContent=T[lang][activeCat];
-    document.getElementById('d-name').textContent=p.name[lang];
-    document.getElementById('d-blend').textContent=p.spec[lang];
-    document.getElementById('d-desc').textContent=p.desc[lang];
-    document.getElementById('d-btn').textContent=T[lang].viewProduct;
-    pack.style.background='linear-gradient(150deg,'+p.c+','+p.c2+')';
-    document.getElementById('d-packname').textContent=p.short;
-    const dots=document.getElementById('d-dots'); dots.innerHTML='';
-    DATA[activeCat].products.forEach((_,i)=>{const b=document.createElement('button');b.className=(i===prodIndex?'on':'')+' tap';b.setAttribute('aria-label','item '+(i+1));b.onclick=function(e){e.stopPropagation();prodIndex=i;renderDetail(true);};dots.appendChild(b);});
-    pack.classList.remove('fade'); body.classList.remove('fade');
-    if(stagger){
-      staggerReveal([
-        document.getElementById('d-cat'),
-        document.getElementById('d-name'),
-        document.getElementById('d-blend'),
-        document.getElementById('d-desc'),
-        document.querySelector('#detail .detail-foot'),
-        document.getElementById('d-dots')
-      ], 70);
-    }
-  };
-  if(crossfade){
-    pack.classList.add('fade'); body.classList.add('fade');
-    setTimeout(paint,140);
-  } else { paint(); }
-}
-
-/* ---------- swipe gestures (mobile-first) ---------- */
-function attachSwipe(el, onLeft, onRight){
-  let sx=0, sy=0, tracking=false;
-  el.addEventListener('touchstart', function(e){
-    if(!e.touches || !e.touches[0]) return;
-    sx=e.touches[0].clientX; sy=e.touches[0].clientY; tracking=true;
-  }, {passive:true});
-  el.addEventListener('touchend', function(e){
-    if(!tracking) return; tracking=false;
-    const t=(e.changedTouches && e.changedTouches[0]) || null;
-    if(!t) return;
-    const dx=t.clientX-sx, dy=t.clientY-sy;
-    if(Math.abs(dx) > 48 && Math.abs(dx) > Math.abs(dy)*1.4){
-      if(dx < 0) onLeft(); else onRight();
-    }
-  }, {passive:true});
-}
-
-/* dedicated single-product page with a real, clean URL path, e.g. /coffee/blend-6
-   (pushState changes never reload the page) */
-function openProductPage(cat,slug,fromUI,push){
-  const idx=DATA[cat].products.findIndex(function(p){return p.slug===slug;});
-  if(idx<0) return;
-  if(fromUI){ lastCat=activeCat; lastIndex=prodIndex; }
-
-  const sourcePack=document.getElementById('d-pack');
-  const destPack=document.getElementById('pf-pack');
-  const detailOpen = !document.getElementById('detail').classList.contains('hidden');
-  const canMorph = !!(fromUI && document.startViewTransition && sourcePack && detailOpen);
-
-  const doNav=function(){
-    activeCat=cat; prodIndex=idx; setAccent(cat);
-    renderProductPage(false, true);
-    go('product', {push:false});
-    if(push!==false){
-      try{ history.pushState({view:'product',cat:cat,slug:slug}, '', withBase('/'+cat+'/'+slug)); }catch(e){}
-    }
-    updateSEO('/'+cat+'/'+slug, DATA[cat].products[idx].name[lang]);
-  };
-
-  if(canMorph){
-    sourcePack.style.viewTransitionName='product-hero-image';
-    const vt=document.startViewTransition(function(){
-      doNav();
-      sourcePack.style.viewTransitionName='';
-      destPack.style.viewTransitionName='product-hero-image';
-    });
-    vt.finished.finally(function(){ destPack.style.viewTransitionName=''; });
-  } else {
-    doNav();
-  }
-}
-function renderProductPage(crossfade, stagger){
-  const pack=document.getElementById('pf-pack'), body=document.getElementById('pf-body');
-  const paint=function(){
-    const p=DATA[activeCat].products[prodIndex];
-    document.getElementById('pf-cat').textContent=T[lang][activeCat];
-    document.getElementById('pf-name').textContent=p.name[lang];
-    document.getElementById('pf-blend').textContent=p.spec[lang];
-    document.getElementById('pf-desc').textContent=p.desc[lang];
-    pack.style.background='linear-gradient(150deg,'+p.c+','+p.c2+')';
-    document.getElementById('pf-packname').textContent=p.short;
-    pack.classList.remove('fade'); body.classList.remove('fade');
-    if(stagger){
-      staggerReveal([
-        document.getElementById('pf-cat'),
-        document.getElementById('pf-name'),
-        document.getElementById('pf-blend'),
-        document.getElementById('pf-desc')
-      ], 80);
-    }
-  };
-  if(crossfade){ pack.classList.add('fade'); body.classList.add('fade'); setTimeout(paint,140); }
-  else { paint(); }
-}
-function stepProductPage(dir){
-  const n=DATA[activeCat].products.length;
-  prodIndex=(prodIndex+dir+n)%n;
-  const slug=DATA[activeCat].products[prodIndex].slug;
-  renderProductPage(true);
-  try{ history.pushState({view:'product',cat:activeCat,slug:slug}, '', withBase('/'+activeCat+'/'+slug)); }catch(e){}
-  updateSEO('/'+activeCat+'/'+slug, DATA[activeCat].products[prodIndex].name[lang]);
-}
-function closeProductPage(){
-  activateCategory(lastCat||'coffee', {scroll:false});
-  prodIndex=lastIndex||0;
-  insertDetailAfterRow(prodIndex);
-  document.getElementById('detail').classList.remove('hidden');
-  renderDetail(false);
-  go('home');
-  requestAnimationFrame(function(){
-    requestAnimationFrame(function(){
-      document.getElementById('detail').scrollIntoView({behavior:'smooth', block:'start'});
-    });
-  });
-}
-function parseAndApplyRoute(path, push){
-  path = (path||'/').replace(/\/+$/,'') || '/';
-  path = stripBase(path);
-  const prodMatch = path.match(/^\/(coffee|chocolate|tea)\/([a-z0-9-]+)$/);
-  if(prodMatch){ openProductPage(prodMatch[1], prodMatch[2], false, false); return true; }
-  const blogMatch = path.match(/^\/blog\/([a-z0-9-]+)$/);
-  if(blogMatch && POSTS.some(function(p){return p.id===blogMatch[1];})){ openArticle(blogMatch[1], false); return true; }
-  const map={'':'home','/':'home','/blog':'blog','/about':'about','/contact':'contact','/privacy':'privacy','/terms':'terms'};
-  const view = map[path];
-  if(view){ go(view, {push:push!==false}); return true; }
-  return false;
-}
-
-function renderBlog(){
-  const g=document.getElementById('blog-grid'); g.innerHTML='';
-  POSTS.forEach((p,i)=>{const el=document.createElement('article');el.className='post reveal';el.style.transitionDelay=(i*35)+'ms';el.onclick=()=>openArticle(p.id);
-    el.innerHTML='<div class="cover" style="background:linear-gradient(135deg,'+p.c+','+p.c2+')"><span class="tag">'+p.cat[lang]+'</span></div><div class="body"><div class="date">'+p.date[lang]+'</div><h3>'+p.title[lang]+'</h3></div>';
-    g.appendChild(el);});
-  observeReveal(g);
-}
-function openArticle(id, push){
-  currentArticle=id; renderArticle(); go('article', {push:false});
-  if(push!==false){
-    try{ history.pushState({view:'article',id:id}, '', withBase('/blog/'+id)); }catch(e){}
-  }
-  const p=POSTS.find(function(x){return x.id===id;});
-  if(p) updateSEO('/blog/'+id, p.title[lang]);
-}
-function renderArticle(){
-  if(!currentArticle)return;
-  const p=POSTS.find(x=>x.id===currentArticle);
-  document.getElementById('article-body').innerHTML='<span class="back" onclick="go(\'blog\')"><span class="arrow-move">←</span> '+T[lang].back+'</span><div style="text-transform:uppercase;letter-spacing:.22em;font-size:12px;font-weight:600;color:'+p.c+';font-family:var(--sans)">'+p.cat[lang]+'</div><h1 style="margin-top:12px">'+p.title[lang]+'</h1><div class="date">'+p.date[lang]+'</div><div class="cover" style="background:linear-gradient(135deg,'+p.c+','+p.c2+')"></div>'+p.body[lang].map(function(par){return '<p style="font-family:var(--sans);color:#3d3128;margin:18px 0;font-size:18px">'+par+'</p>';}).join('');
-}
-
-window.addEventListener('popstate', function(){
-  parseAndApplyRoute(location.pathname, false);
-});
-
-(function init(){
-  document.querySelectorAll('[data-base-src]').forEach(function(el){
-    el.src = withBase(el.getAttribute('data-base-src'));
-  });
-  renderHero();
-  startHeroRotation();
-  initTheme();
-  initCookieBar();
-  document.getElementById('ka').classList.add('active');
-  activateCategory('coffee', {scroll:false});
-  const matched = parseAndApplyRoute(location.pathname, false);
-  if(!matched){ go('home', {push:false}); }
-  renderText(); renderBlog();
-  attachSwipe(document.getElementById('detail-media'), function(){stepProduct(1);}, function(){stepProduct(-1);});
-  attachSwipe(document.getElementById('pf-grid'), function(){stepProductPage(1);}, function(){stepProductPage(-1);});
-  attachSwipe(document.getElementById('hero'), function(){heroStep(1);}, function(){heroStep(-1);});
-  document.querySelectorAll('.selector .cat-btn').forEach((el,i)=>{el.classList.add('reveal');el.style.transitionDelay=(i*70)+'ms';});
-  observeReveal(document.querySelector('.selector'));
+  window.BASE_PATH = base;
+  document.write('<link rel="stylesheet" href="'+base+'/styles.css?v=11">');
 })();
+</script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#F3E9DA">
+<meta name="robots" content="index, follow">
+<title>Doll's Coffee — ყავა, შოკოლადი და ჩაი | AVEK-ის ოფიციალური პარტნიორი</title>
+<meta name="description" content="Doll's Coffee — მაღალხარისხიანი ყავა, შოკოლადი და ჩაი საქართველოში. AVEK-ის (საბერძნეთი) ოფიციალური პარტნიორი.">
+<link rel="canonical" href="https://www.dollscoffee.ge/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Doll's Coffee">
+<meta property="og:title" content="Doll's Coffee — ყავა, შოკოლადი და ჩაი">
+<meta property="og:description" content="მაღალხარისხიანი ყავა, შოკოლადი და ჩაი. AVEK-ის ოფიციალური პარტნიორი საქართველოში.">
+<meta property="og:url" content="https://www.dollscoffee.ge/">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Doll's Coffee">
+<meta name="twitter:description" content="მაღალხარისხიანი ყავა, შოკოლადი და ჩაი. AVEK-ის ოფიციალური პარტნიორი.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23B4472B' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M17 8h1a4 4 0 1 1 0 8h-1'/%3E%3Cpath d='M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4Z'/%3E%3Cline x1='6' x2='6' y1='2' y2='4'/%3E%3Cline x1='10' x2='10' y1='2' y2='4'/%3E%3Cline x1='14' x2='14' y1='2' y2='4'/%3E%3C/svg%3E">
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"Organization","name":"Doll's Coffee","url":"https://www.dollscoffee.ge/","description":"Coffee, chocolate and tea importer and distributor. Official partner of AVEK, Greece.","address":{"@type":"PostalAddress","addressLocality":"Tbilisi","addressCountry":"GE"},"telephone":"+995322000000"}
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Instrument+Sans:wght@400;500;600&family=Noto+Serif+Georgian:wght@400;500;600;700&family=Noto+Sans+Georgian:wght@400;500;600&display=swap" rel="stylesheet">
+</head>
+<body>
+<a href="#main-content" class="skip-link" onclick="skipToMain(event)">გამოტოვე ნავიგაცია და გადადი კონტენტზე</a>
+<header>
+  <div class="wrap nav">
+    <button class="brand tap" onclick="go('home')"><img data-base-src="/logo.png" alt="Doll's Coffee logo" class="brand-logo" width="40" height="40"><span class="mark">Dolls<b>Coffee</b></span></button>
+    <nav class="menu" id="menu">
+      <a data-nav="home" onclick="go('home')"></a>
+      <a data-nav="blog" onclick="go('blog')"></a>
+      <a data-nav="about" onclick="go('about')"></a>
+      <a data-nav="contact" onclick="go('contact')"></a>
+    </nav>
+    <div class="toolbar">
+      <button class="theme-toggle tap" onclick="toggleTheme()" aria-label="theme">
+        <svg class="ico moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+        <svg class="ico sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path></svg>
+      </button>
+      <div class="lang">
+        <button id="ka" onclick="toggleLang()" aria-label="ქართული ენის არჩევა">GE</button>
+        <button id="en" onclick="toggleLang()" aria-label="Switch to English">EN</button>
+      </div>
+      <button class="burger tap" id="burgerBtn" onclick="toggleMenu()" aria-label="menu" aria-expanded="false">
+        <svg class="ico burger-open" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" x2="20" y1="12" y2="12"></line><line x1="4" x2="20" y1="6" y2="6"></line><line x1="4" x2="20" y1="18" y2="18"></line></svg>
+        <svg class="ico burger-close" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>
+      </button>
+    </div>
+  </div>
+</header>
+<main id="main-content">
+<section class="page show" id="page-home">
+  <div class="hero" id="hero" role="region" aria-label="ბრენდის ფოტოები">
+    <div class="hero-slides" id="heroSlides"></div>
+    <button class="hero-arrow prev" onclick="heroStep(-1)" aria-label="წინა ფოტო"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg></button>
+    <button class="hero-arrow next" onclick="heroStep(1)" aria-label="შემდეგი ფოტო"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg></button>
+    <div class="hero-dots" id="heroDots"></div>
+  </div>
+  <div class="wrap selector">
+    <div class="cats">
+      <button class="cat-btn tap c-coffee" data-cat="coffee" onclick="activateCategory('coffee',{scroll:false})" data-t="coffee"></button>
+      <button class="cat-btn tap c-chocolate" data-cat="chocolate" onclick="activateCategory('chocolate',{scroll:false})" data-t="chocolate"></button>
+      <button class="cat-btn tap c-tea" data-cat="tea" onclick="activateCategory('tea',{scroll:false})" data-t="tea"></button>
+    </div>
+  </div>
+
+  <section class="list-section wrap" id="list-section">
+    <div class="prod-grid" id="prod-list"></div>
+  </section>
+
+  <section class="detail hidden wrap" id="detail">
+    <div class="detail-inner tap" onclick="openProductPage(activeCat, DATA[activeCat].products[prodIndex].slug, true)">
+      <div class="detail-top"></div>
+      <div class="detail-media" id="detail-media">
+        <button class="darrow tap prev" onclick="event.stopPropagation();stepProduct(-1)" aria-label="prev product"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg></button>
+        <div class="detail-pack" id="d-pack"><span class="pname" id="d-packname"></span></div>
+        <button class="darrow tap next" onclick="event.stopPropagation();stepProduct(1)" aria-label="next product"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg></button>
+      </div>
+      <div class="detail-body" id="detail-body">
+        <div class="cat" id="d-cat"></div>
+        <h2 id="d-name"></h2>
+        <div class="blend" id="d-blend"></div>
+        <div class="desc" id="d-desc"></div>
+        <div class="detail-foot"><button class="btn solid tap" id="d-btn" onclick="event.stopPropagation();openProductPage(activeCat, DATA[activeCat].products[prodIndex].slug, true)"></button></div>
+        <div class="dots" id="d-dots"></div>
+      </div>
+    </div>
+  </section>
+</section>
+
+<section class="page" id="page-product">
+  <div class="wrap product-full">
+    <button class="back-circle tap" onclick="closeProductPage()" aria-label="back"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg></button>
+    <div class="pf-grid" id="pf-grid">
+      <div class="pf-media"><div class="pf-pack" id="pf-pack"><span class="pname" id="pf-packname"></span></div></div>
+      <div class="pf-body" id="pf-body">
+        <div class="cat" id="pf-cat"></div>
+        <h1 id="pf-name"></h1>
+        <div class="blend" id="pf-blend"></div>
+        <div class="desc" id="pf-desc"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="page" id="page-blog">
+  <div class="wrap section-head"><div class="eyebrow" data-t="blogEyebrow"></div><h1 data-t="blogTitle"></h1></div>
+  <div class="wrap blog-grid" id="blog-grid"></div>
+</section>
+<section class="page" id="page-article"><div class="wrap article" id="article-body"></div></section>
+<section class="page" id="page-about">
+  <div class="wrap section-head"><div class="eyebrow" data-t="aboutEyebrow"></div><h1 data-t="aboutTitle"></h1></div>
+  <div class="wrap legal"><p class="lead" data-t="aboutLead"></p></div>
+</section>
+<section class="page" id="page-contact">
+  <div class="wrap section-head"><div class="eyebrow" data-t="contactEyebrow"></div><h1 data-t="contactTitle"></h1></div>
+  <div class="wrap contact-grid">
+    <div>
+      <div class="info-line"><div class="ic"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"></path></svg></div><div><div class="k" data-t="phone"></div><div class="v"><a href="tel:+995599996052">+995 599 996 052</a></div></div></div>
+      <div class="info-line"><div class="ic"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="16" x="2" y="4" rx="2"></rect><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"></path></svg></div><div><div class="k">Email</div><div class="v"><a href="mailto:info@dollscoffee.com">info@dollscoffee.com</a></div></div></div>
+      <div class="info-line"><div class="ic"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"></path><circle cx="12" cy="10" r="3"></circle></svg></div><div><div class="k" data-t="address"></div><div class="v" data-t="addressVal"></div></div></div>
+    </div>
+    <form onsubmit="event.preventDefault();this.reset();alert(T[lang].sent)">
+      <div class="field"><label data-t="fName"></label><input required></div>
+      <div class="field"><label data-t="fEmail"></label><input type="email" required></div>
+      <div class="field"><label data-t="fMsg"></label><textarea rows="4" required></textarea></div>
+      <button class="btn solid tap" type="submit" data-t="fSend"></button>
+    </form>
+  </div>
+</section>
+<section class="page" id="page-privacy">
+  <div class="wrap legal"><h1 data-t="privTitle"></h1><p class="lead" data-t="privLead"></p><p data-t="privP1"></p>
+    <a class="btn official tap" href="https://avek.gr/en/privacy-policy/" target="_blank" rel="noopener"><span data-t="viewFull"></span><span class="arrow-move">→</span></a></div>
+</section>
+<section class="page" id="page-terms">
+  <div class="wrap legal"><h1 data-t="termsTitle"></h1><p class="lead" data-t="termsLead"></p><p data-t="termsP1"></p>
+    <a class="btn official tap" href="https://avek.gr/en/oroi-xrisis/" target="_blank" rel="noopener"><span data-t="viewFull"></span><span class="arrow-move">→</span></a></div>
+</section>
+</main>
+
+<div class="cookie-bar" id="cookieBar" hidden>
+  <p data-t="cookieText"></p>
+  <div class="cookie-actions">
+    <button class="btn tap small" onclick="declineCookies()" data-t="cookieDecline"></button>
+    <button class="btn solid tap small" onclick="acceptCookies()" data-t="cookieAccept"></button>
+    <a class="cookie-link" onclick="go('privacy')" data-t="priv"></a>
+  </div>
+</div>
+
+<footer>
+  <div class="wrap foot-grid">
+    <div class="foot-block">
+      <div class="foot-nav-btns">
+        <button class="foot-nav-btn tap" data-nav="home" onclick="go('home')"></button>
+        <button class="foot-nav-btn tap" data-nav="blog" onclick="go('blog')"></button>
+        <button class="foot-nav-btn tap" data-nav="about" onclick="go('about')"></button>
+        <button class="foot-nav-btn tap" data-nav="contact" onclick="go('contact')"></button>
+      </div>
+      <div class="foot-social">
+        <a href="#" target="_blank" rel="noopener" aria-label="Facebook" class="foot-social-btn">
+          <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M22 12c0-5.523-4.477-10-10-10S2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.878v-6.987h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.988C18.343 21.128 22 16.991 22 12z"/></svg>
+        </a>
+        <a href="#" target="_blank" rel="noopener" aria-label="Instagram" class="foot-social-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><rect x="2" y="2" width="20" height="20" rx="5"></rect><circle cx="12" cy="12" r="4"></circle><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"></circle></svg>
+        </a>
+        <a href="#" target="_blank" rel="noopener" aria-label="LinkedIn" class="foot-social-btn">
+          <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 1 1 0-4.125 2.062 2.062 0 0 1 0 4.125zM7.114 20.452H3.558V9h3.556v11.452z"/></svg>
+        </a>
+      </div>
+    </div>
+    <div class="foot-block">
+      <h4 data-t="footTbilisiHeading"></h4>
+      <a class="foot-line" href="https://www.google.com/maps/search/?api=1&query=%E1%83%95%E1%83%90%E1%83%A1%E1%83%98%E1%83%9A%20%E1%83%99%E1%83%9D%E1%83%9E%E1%83%AA%E1%83%9D%E1%83%95%E1%83%98%E1%83%A1%2034%E1%83%91" target="_blank" rel="noopener" data-t="footTbilisiAddress"></a>
+      <a class="foot-line" href="tel:+995599996052">+995 599996052</a>
+      <a class="foot-line" href="tel:+995599343632">+995 599343632</a>
+      <a class="foot-line" href="mailto:info@dollscoffee.com">info@dollscoffee.com</a>
+    </div>
+    <div class="foot-block">
+      <h4 data-t="footAthensHeading"></h4>
+      <a class="foot-line" href="https://www.google.com/maps/search/?api=1&query=Leoforo%20Nato%2041%2C%20Aspropirgos%2C%2019300%2C%20Greece" target="_blank" rel="noopener">Leoforo Nato 41, Aspropirgos T.K.19300</a>
+      <a class="foot-line" href="tel:+306977538799">+30 697 7538799</a>
+    </div>
+  </div>
+  <div class="wrap foot-in">
+    <div class="foot-logos">
+      <img data-base-src="/eu-cofunded.png" alt="Co-funded by the European Union" width="300" height="48">
+      <img data-base-src="/espa-logo.png" alt="ESPA 2021-2027" width="400" height="93">
+    </div>
+    <div class="foot-links">
+      <a onclick="go('privacy')" data-t="priv"></a>
+      <a onclick="go('terms')" data-t="terms"></a>
+    </div>
+  </div>
+  <div class="wrap foot-bottom"><span>© 2026</span><span>·</span><span>dollscoffee.ge</span><span>·</span><span data-t="rights"></span></div>
+</footer>
+<script>document.write('<script src="'+window.BASE_PATH+'/script.js?v=11" defer><\/script>');</script>
+</body>
+</html>
