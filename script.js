@@ -49,6 +49,7 @@ const T = {
     privTitle:'კონფიდენციალურობის პოლიტიკა',privLead:'',privP1:'',termsTitle:'გამოყენების წესები',termsLead:'',termsP1:'',viewFull:'სრული დოკუმენტის ნახვა',
     cookieText:'საიტი იყენებს cookie-ებს გამოცდილების გასაუმჯობესებლად.',cookieAccept:'კარგი',cookieDecline:'უარყოფა',
     marqueeText:'· 100% არაბიკა · AVEK-ის ოფიციალური პარტნიორი, საბერძნეთი · ხელით შერჩეული ბლენდები ',
+    footTbilisiHeading:'საქართველო, თბილისი',footTbilisiAddress:'ვასილ კოპცოვის 34ბ',footAthensHeading:'საბერძნეთი, ათენი',
     heroPlaceholder:'ფოტო მალე დაემატება'},
   en:{home:'Home',blog:'Blog',contact:'Contact',about:'About Us',coffee:'Coffee',chocolate:'Chocolate',tea:'Tea',viewProduct:'Product details',
     blogEyebrow:'Journal',blogTitle:'The Blog',contactEyebrow:'Get in touch',contactTitle:'Contact',
@@ -59,6 +60,7 @@ const T = {
     privTitle:'Privacy Policy',privLead:'',privP1:'',termsTitle:'Terms of use',termsLead:'',termsP1:'',viewFull:'View full document',
     cookieText:'This site uses cookies to improve your experience.',cookieAccept:'Got it',cookieDecline:'Decline',
     marqueeText:'· 100% Arabica · Official partner of AVEK, Greece · Hand-selected blends ',
+    footTbilisiHeading:'Georgia, Tbilisi',footTbilisiAddress:'34b Vasil Koptsovi St',footAthensHeading:'Greece, Athens',
     heroPlaceholder:'Photo coming soon'}
 };
 const POSTS = [
