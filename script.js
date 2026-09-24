@@ -246,7 +246,12 @@ function renderHero(){
   }
   if(heroEl) heroEl.hidden = false;
   slidesEl.innerHTML = HERO.map(function(s,i){
-    return '<div class="hero-slide'+(i===0?' active':'')+'" style="background-image:url(\''+s.photo_url+'\');background-size:cover;background-position:center;"></div>';
+    const bgStyle = "background-image:url('"+s.photo_url+"');background-size:cover;background-position:center;";
+    const activeClass = i===0 ? ' active' : '';
+    if(s.link_url){
+      return '<a class="hero-slide'+activeClass+'" style="'+bgStyle+'" href="'+esc(s.link_url)+'" target="_blank" rel="noopener noreferrer"></a>';
+    }
+    return '<div class="hero-slide'+activeClass+'" style="'+bgStyle+'"></div>';
   }).join('');
   if(dotsEl){
     dotsEl.innerHTML = HERO.map(function(_,i){
@@ -767,4 +772,9 @@ window.addEventListener('popstate', function(){
   attachSwipe(document.getElementById('detail-media'), function(){stepProduct(1);}, function(){stepProduct(-1);});
   attachSwipe(document.getElementById('pf-grid'), function(){stepProductPage(1);}, function(){stepProductPage(-1);});
   attachSwipe(document.getElementById('hero'), function(){heroStep(1);}, function(){heroStep(-1);});
+  const heroEl = document.getElementById('hero');
+  if(heroEl){
+    heroEl.addEventListener('mouseenter', function(){ clearInterval(heroTimer); });
+    heroEl.addEventListener('mouseleave', function(){ startHeroRotation(); });
+  }
 })();

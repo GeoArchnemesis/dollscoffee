@@ -268,6 +268,9 @@ function renderHero(){
     return (
       '<div class="hero-card" data-id="' + s.id + '">' +
         '<img src="' + esc(s.photo_url) + '" alt="">' +
+        '<div class="hero-card-link">' +
+          '<input type="url" class="f-link" placeholder="ლინკი (არასავალდებულო) — მაგ. https://..." value="' + esc(s.link_url || '') + '">' +
+        '</div>' +
         '<div class="hero-card-actions">' +
           '<span class="drag-handle" title="გადათრევით დალაგება">⠿</span>' +
           '<label class="toggle"><input type="checkbox" class="f-active"' + (s.is_active ? ' checked' : '') + '> აქტიური</label>' +
@@ -281,6 +284,11 @@ function renderHero(){
     card.querySelector('.f-active').addEventListener('change', async function(e){
       const { error } = await sb.from('hero_slides').update({ is_active: e.target.checked }).eq('id', id);
       if (error) { alert(friendlyError(error)); e.target.checked = !e.target.checked; }
+    });
+    card.querySelector('.f-link').addEventListener('change', async function(e){
+      const value = e.target.value.trim();
+      const { error } = await sb.from('hero_slides').update({ link_url: value || null }).eq('id', id);
+      if (error) alert(friendlyError(error));
     });
     card.querySelector('[data-act="delete"]').addEventListener('click', async function(){
       if (!confirm('წავშალო ეს ფოტო?')) return;

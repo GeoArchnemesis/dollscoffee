@@ -85,6 +85,8 @@ input,select,textarea{font:inherit;color:inherit}
 .hero-card{background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden}
 .hero-card img{width:100%;aspect-ratio:20/10;object-fit:cover}
 .hero-card-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:10px}
+.hero-card-link{padding:10px 10px 0}
+.hero-card-link input{width:100%;border:1px solid var(--line);border-radius:8px;padding:7px 10px;font-size:13px;background:#fff}
 
 /* ---------- products ---------- */
 .product-card{flex-direction:row;flex-wrap:wrap;align-items:center;gap:14px}
