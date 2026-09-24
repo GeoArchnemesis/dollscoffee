@@ -1,0 +1,15 @@
+# www -> apex (non-www) redirect, keeps a single canonical host
+[[redirects]]
+  from = "https://www.dollscoffee.ge/*"
+  to = "https://dollscoffee.ge/:splat"
+  status = 301
+  force = true
+
+# SPA fallback: every route that isn't a real static file (robots.txt,
+# sitemap.xml, llms.txt, images, etc. all still resolve to themselves first)
+# gets index.html with a 200, so direct loads/refreshes of /blog, /contact,
+# /about, /privacy, /terms and product/article deep links work.
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

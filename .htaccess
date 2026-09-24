@@ -1,0 +1,12 @@
+# Apache hosting fallback (Netlify/Vercel use netlify.toml / vercel.json instead)
+RewriteEngine On
+
+# www -> apex (non-www)
+RewriteCond %{HTTP_HOST} ^www\.dollscoffee\.ge$ [NC]
+RewriteRule ^(.*)$ https://dollscoffee.ge/$1 [R=301,L]
+
+# SPA fallback: serve index.html (200) for any route that isn't a real file,
+# so direct loads/refreshes of /blog, /contact, /about etc. don't 404.
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^ index.html [L]

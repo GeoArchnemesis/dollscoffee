@@ -1,0 +1,17 @@
+# Doll's Coffee
+
+> Doll's Coffee is a coffee, chocolate and tea importer and distributor in Georgia, and the official partner of AVEK (Greece). The site is a B2B/partner-facing catalog, not a retail storefront.
+
+Doll's Coffee showcases AVEK's coffee, chocolate and tea product lines to potential partners and clients in Georgia. The catalog (products, blog posts and contact locations) is loaded client-side from a database, so content changes frequently and this file only lists stable navigation entry points.
+
+## Pages
+
+- [Home](https://dollscoffee.ge/): Product catalog by category (coffee, chocolate, tea).
+- [Blog](https://dollscoffee.ge/blog): Articles and news.
+- [About](https://dollscoffee.ge/about): About Doll's Coffee and the AVEK partnership.
+- [Contact](https://dollscoffee.ge/contact): Contact details and locations.
+
+## Notes
+
+- Site content is available in Georgian (default) and English via an in-page language toggle.
+- Product and blog post pages use URLs of the form `/{category}/{product-slug}` and `/blog/{post-slug}`.

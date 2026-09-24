@@ -74,9 +74,12 @@ const T = {
     fName:'სახელი',fEmail:'ელ. ფოსტა',fMsg:'შეტყობინება',fSend:'გაგზავნა',sent:'მადლობა! შეტყობინება გაიგზავნა.',back:'უკან ბლოგზე',
     priv:'კონფიდენციალურობის პოლიტიკა',terms:'გამოყენების წესები',rights:'ყველა უფლება დაცულია',
     privTitle:'კონფიდენციალურობის პოლიტიკა',privLead:'',privP1:'',termsTitle:'გამოყენების წესები',termsLead:'',termsP1:'',viewFull:'სრული დოკუმენტის ნახვა',
-    cookieText:'საიტი იყენებს cookie-ებს გამოცდილების გასაუმჯობესებლად.',cookieAccept:'კარგი',cookieDecline:'უარყოფა',
     marqueeText:'· 100% არაბიკა · AVEK-ის ოფიციალური პარტნიორი, საბერძნეთი · ხელით შერჩეული ბლენდები ',
     footTbilisiHeading:'საქართველო, თბილისი',footTbilisiAddress:'ვასილ კოპცოვის 34ბ',footAthensHeading:'საბერძნეთი, ათენი',
+    heroH1:'თქვენი სანდო პარტნიორი ხარისხიან ყავაში',
+    heroSub:'ყავა, შოკოლადი და ჩაი — AVEK-ის (საბერძნეთი) ოფიციალური პარტნიორი საქართველოში, 100% არაბიკა და ხელით შერჩეული ბლენდები.',
+    heroCta1:'იხილეთ პროდუქცია',heroCta2:'პარტნიორობა/კონტაქტი',
+    themeToDark:'მუქი რეჟიმის ჩართვა',themeToLight:'ღია რეჟიმის ჩართვა',
     heroPlaceholder:'ფოტო მალე დაემატება', emptyProducts:'მალე დაემატება ახალი პროდუქტები', emptyBlog:'ბლოგის პირველი პოსტი მალე გამოქვეყნდება'},
   en:{home:'Home',blog:'Blog',contact:'Contact',about:'About Us',coffee:'Coffee',chocolate:'Chocolate',tea:'Tea',viewProduct:'Product details',
     blogEyebrow:'Journal',blogTitle:'The Blog',contactEyebrow:'Get in touch',contactTitle:'Contact',
@@ -85,9 +88,12 @@ const T = {
     fName:'Name',fEmail:'Email',fMsg:'Message',fSend:'Send message',sent:'Thank you! Your message was sent.',back:'Back to blog',
     priv:'Privacy Policy',terms:'Terms of use',rights:'All Rights Reserved',
     privTitle:'Privacy Policy',privLead:'',privP1:'',termsTitle:'Terms of use',termsLead:'',termsP1:'',viewFull:'View full document',
-    cookieText:'This site uses cookies to improve your experience.',cookieAccept:'Got it',cookieDecline:'Decline',
     marqueeText:'· 100% Arabica · Official partner of AVEK, Greece · Hand-selected blends ',
     footTbilisiHeading:'Georgia, Tbilisi',footTbilisiAddress:'34b Vasil Koptsovi St',footAthensHeading:'Greece, Athens',
+    heroH1:'Your Trusted Partner in Quality Coffee',
+    heroSub:'Coffee, chocolate and tea — official partner of AVEK (Greece) in Georgia, 100% Arabica and hand-selected blends.',
+    heroCta1:'View Products',heroCta2:'Partnership / Contact',
+    themeToDark:'Switch to dark mode',themeToLight:'Switch to light mode',
     heroPlaceholder:'Photo coming soon', emptyProducts:'New products coming soon', emptyBlog:'The first blog post is coming soon'}
 };
 /* ---------- base path ----------
@@ -111,10 +117,18 @@ let lang='ka', activeCat='coffee', prodIndex=0, currentView='home', currentArtic
 let lastCat='coffee', lastIndex=0;
 
 /* ---------- theme ---------- */
+function updateThemeToggleA11y(t){
+  const btn = document.getElementById('themeToggle');
+  if(!btn) return;
+  const isDark = t === 'dark';
+  btn.setAttribute('aria-pressed', isDark ? 'true' : 'false');
+  btn.setAttribute('aria-label', isDark ? T[lang].themeToLight : T[lang].themeToDark);
+}
 function applyTheme(t){
   document.documentElement.setAttribute('data-theme', t);
   const mc = document.querySelector('meta[name="theme-color"]');
   if(mc) mc.setAttribute('content', t==='dark' ? '#1B1512' : '#F3E9DA');
+  updateThemeToggleA11y(t);
   try{ localStorage.setItem('doc-theme', t); }catch(e){}
 }
 function toggleTheme(){
@@ -137,7 +151,7 @@ function initTheme(){
 function updateSEO(pathAbs, titleSuffix){
   const base = "Doll's Coffee";
   document.title = titleSuffix ? (titleSuffix+' | '+base) : base+' — ყავა, შოკოლადი და ჩაი';
-  const full = 'https://www.dollscoffee.ge'+(pathAbs==='/'?'':pathAbs);
+  const full = 'https://dollscoffee.ge'+(pathAbs==='/'?'':pathAbs);
   const canon = document.querySelector('link[rel="canonical"]');
   if(canon) canon.setAttribute('href', full);
   const ogUrl = document.querySelector('meta[property="og:url"]');
@@ -160,24 +174,6 @@ function skipToMain(e){
   m.focus();
 }
 
-/* ---------- cookie consent ---------- */
-function acceptCookies(){
-  try{ localStorage.setItem('cookie-consent','accepted'); }catch(e){}
-  const bar=document.getElementById('cookieBar');
-  if(bar) bar.hidden=true;
-}
-function declineCookies(){
-  try{ localStorage.setItem('cookie-consent','declined'); }catch(e){}
-  const bar=document.getElementById('cookieBar');
-  if(bar) bar.hidden=true;
-}
-function initCookieBar(){
-  let decided=false;
-  try{ decided = !!localStorage.getItem('cookie-consent'); }catch(e){}
-  const bar=document.getElementById('cookieBar');
-  if(bar) bar.hidden = decided;
-}
-
 /* ---------- view-transition helper (progressive enhancement) ---------- */
 function withTransition(fn){
   try{
@@ -194,9 +190,13 @@ function initReveal(){
     document.querySelectorAll('.reveal').forEach(el=>el.classList.add('in'));
     return;
   }
+  /* generous bottom margin so grid rows a couple of screens below the
+     fold reveal right after load instead of sitting invisible (opacity:0)
+     while still occupying their grid cell - that looked like a large
+     empty gap in the product grid on tall pages/short viewports. */
   revealObserver = new IntersectionObserver((entries)=>{
     entries.forEach(en=>{ if(en.isIntersecting){ en.target.classList.add('in'); revealObserver.unobserve(en.target); } });
-  },{threshold:0, rootMargin:'0px 0px 200px 0px'});
+  },{threshold:0, rootMargin:'0px 0px 1200px 0px'});
 }
 function observeReveal(container){
   initReveal();
@@ -239,12 +239,23 @@ function renderHero(){
   const heroEl=document.getElementById('hero');
   const slidesEl=document.getElementById('heroSlides');
   const dotsEl=document.getElementById('heroDots');
+  const prevBtn = heroEl ? heroEl.querySelector('.hero-arrow.prev') : null;
+  const nextBtn = heroEl ? heroEl.querySelector('.hero-arrow.next') : null;
   if(!slidesEl) return;
+  /* the hero headline/CTA overlay carries the page's only <h1> (SEO/a11y),
+     so it must stay visible even with zero photos - only the slider chrome
+     (slides, dots, arrows) is conditional on HERO having data. */
   if(!HERO.length){
-    if(heroEl) heroEl.hidden = true;
+    slidesEl.innerHTML = '';
+    if(dotsEl) dotsEl.innerHTML = '';
+    if(prevBtn) prevBtn.hidden = true;
+    if(nextBtn) nextBtn.hidden = true;
+    if(heroEl) heroEl.classList.add('no-photo');
     return;
   }
-  if(heroEl) heroEl.hidden = false;
+  if(heroEl) heroEl.classList.remove('no-photo');
+  if(prevBtn) prevBtn.hidden = false;
+  if(nextBtn) nextBtn.hidden = false;
   slidesEl.innerHTML = HERO.map(function(s,i){
     const bgStyle = "background-image:url('"+s.photo_url+"');background-size:cover;background-position:center;";
     const activeClass = i===0 ? ' active' : '';
@@ -270,6 +281,10 @@ function setHeroSlide(i){
   slides[heroIndex].classList.add('active');
   if(dots[heroIndex]) dots[heroIndex].classList.add('on');
 }
+function scrollToProducts(){
+  const el = document.getElementById('list-section');
+  if(el) el.scrollIntoView({behavior:'smooth', block:'start'});
+}
 function heroStep(dir){ setHeroSlide(heroIndex+dir); startHeroRotation(); }
 function goToHeroSlide(i){ setHeroSlide(i); startHeroRotation(); }
 function startHeroRotation(){
@@ -291,6 +306,7 @@ function setLang(l){
   if(currentView==='product') renderProductPage(true);
   renderBlog(); renderArticle();
   renderContactInfo(); renderContactLocations(); renderAboutPage();
+  updateThemeToggleA11y(document.documentElement.getAttribute('data-theme')==='dark' ? 'dark' : 'light');
 }
 function renderText(){
   document.querySelectorAll('[data-t]').forEach(el=>{const v=T[lang][el.dataset.t];if(v!==undefined)el.textContent=v;});
@@ -762,7 +778,6 @@ window.addEventListener('popstate', function(){
   renderHero();
   startHeroRotation();
   initTheme();
-  initCookieBar();
   document.getElementById('ka').classList.add('active');
   if(SECTIONS.length) activateCategory(activeCat, {scroll:false});
   const matched = parseAndApplyRoute(location.pathname, false);
