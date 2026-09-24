@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="ka">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>Doll's Coffee — ადმინი</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Noto+Serif+Georgian:wght@600;700&family=Noto+Sans+Georgian:wght@400;500;600&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="admin.css">
+<link href="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.snow.css" rel="stylesheet">
+</head>
+<body>
+
+<div id="view-login" class="auth-wrap">
+  <form id="loginForm" class="auth-card" novalidate>
+    <h1>Doll's Coffee</h1>
+    <p class="sub">ადმინ პანელი</p>
+    <label>ელ. ფოსტა
+      <input type="email" id="loginEmail" required autocomplete="username">
+    </label>
+    <label>პაროლი
+      <input type="password" id="loginPassword" required autocomplete="current-password">
+    </label>
+    <button type="submit" class="btn solid full">შესვლა</button>
+    <p class="err" id="loginError" hidden></p>
+  </form>
+</div>
+
+<div id="view-dashboard" hidden>
+  <header class="topbar">
+    <div class="topbar-brand">Doll's Coffee <span class="muted">· ადმინი</span></div>
+    <button id="logoutBtn" class="btn ghost small">გასვლა</button>
+  </header>
+
+  <nav class="tabs wrap">
+    <button class="tab-btn active" data-tab="hero">სლაიდერის ფოტოები</button>
+    <button class="tab-btn" data-tab="sections">სექციები</button>
+    <button class="tab-btn" data-tab="products">პროდუქტები</button>
+    <button class="tab-btn" data-tab="blog">ბლოგი</button>
+    <button class="tab-btn" data-tab="pages">გვერდები</button>
+    <button class="tab-btn" data-tab="messages">შეტყობინებები</button>
+  </nav>
+
+  <main class="wrap">
+    <section id="tab-hero" class="tab-panel">
+      <div class="panel-head">
+        <h2>სლაიდერის ფოტოები</h2>
+        <label class="btn solid upload-btn">+ ახალი ფოტო
+          <input type="file" id="heroFileInput" accept="image/jpeg,image/png,image/webp,.heic,.heif" hidden>
+        </label>
+      </div>
+      <p class="hint">რეკომენდებული ზომა ~1600×800px. ატვირთვისას ავტომატურად შეიკუმშება.</p>
+      <div id="heroList" class="hero-list"></div>
+    </section>
+
+    <section id="tab-sections" class="tab-panel" hidden>
+      <div class="panel-head">
+        <h2>სექციები</h2>
+      </div>
+      <div id="sectionsList" class="cards-list"></div>
+      <div class="card new-card">
+        <div class="card-row">
+          <input id="newSectionKa" placeholder="სახელი (KA)">
+          <input id="newSectionEn" placeholder="Name (EN)">
+        </div>
+        <div class="card-row">
+          <input id="newSectionSlug" placeholder="slug (მაგ. coffee)">
+          <input type="color" id="newSectionColor" value="#B4472B">
+        </div>
+        <div class="card-actions"><button class="btn solid" id="createSectionBtn">+ ახალი სექციის დამატება</button></div>
+      </div>
+    </section>
+
+    <section id="tab-products" class="tab-panel" hidden>
+      <div class="panel-head">
+        <h2>პროდუქტები</h2>
+        <div class="product-controls">
+          <select id="productSectionFilter"></select>
+          <button class="btn solid" id="addProductBtn">+ ახალი პროდუქტი</button>
+        </div>
+      </div>
+      <div id="productsList" class="cards-list"></div>
+    </section>
+
+    <section id="tab-blog" class="tab-panel" hidden>
+      <div class="panel-head">
+        <h2>ბლოგი</h2>
+        <button class="btn solid" id="addBlogPostBtn">+ ახალი პოსტი</button>
+      </div>
+      <div id="blogList" class="cards-list"></div>
+    </section>
+
+    <section id="tab-pages" class="tab-panel" hidden>
+      <div class="panel-head"><h2>გვერდები</h2></div>
+
+      <div class="card">
+        <h3 class="card-subhead">კონტაქტის ინფორმაცია</h3>
+        <div class="card-row">
+          <label class="field">Email<input id="ciEmail" type="email"></label>
+        </div>
+        <div class="card-actions"><button class="btn solid" id="saveContactInfoBtn">შენახვა</button></div>
+        <p class="err" id="contactInfoSaved" hidden></p>
+      </div>
+
+      <div class="pages-card-spaced">
+        <div class="panel-head">
+          <h3 class="card-subhead">ლოკაციები</h3>
+          <button class="btn solid" id="addLocationBtn">+ ლოკაციის დამატება</button>
+        </div>
+        <div id="locationsList" class="cards-list"></div>
+      </div>
+
+      <div class="card pages-card-spaced">
+        <h3 class="card-subhead">ჩვენს შესახებ</h3>
+        <div class="card-row">
+          <label class="field">სათაური (KA)<input id="apTitleKa"></label>
+          <label class="field">Title (EN)<input id="apTitleEn"></label>
+        </div>
+        <div class="card-row">
+          <label class="field">ტექსტი (KA)<textarea id="apBodyKa" rows="5"></textarea></label>
+          <label class="field">Body (EN)<textarea id="apBodyEn" rows="5"></textarea></label>
+        </div>
+        <div class="card-actions"><button class="btn solid" id="saveAboutPageBtn">შენახვა</button></div>
+        <p class="err" id="aboutPageSaved" hidden></p>
+      </div>
+    </section>
+
+    <section id="tab-messages" class="tab-panel" hidden>
+      <div class="panel-head"><h2>შეტყობინებები</h2></div>
+      <div id="messagesList" class="cards-list"></div>
+    </section>
+  </main>
+</div>
+
+<div id="modalRoot"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.6/Sortable.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/quill@2.0.3/dist/quill.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js"></script>
+<script src="config.js"></script>
+<script src="admin.js"></script>
+</body>
+</html>
