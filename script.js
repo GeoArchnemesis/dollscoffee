@@ -56,7 +56,10 @@ function formatBlogDate(dateStr){
 function variantsText(p){
   if(!p.variants || !p.variants.length) return '';
   return p.variants.map(function(v){
-    const unit = v.unit==='kg' ? (lang==='ka'?'კგ':'kg') : (lang==='ka'?'გრ':'g');
+    var unit;
+    if (v.unit === 'kg') unit = lang==='ka' ? 'კგ' : 'kg';
+    else if (v.unit === 'pcs') unit = lang==='ka' ? ' ცალი' : ' Pcs';
+    else unit = lang==='ka' ? 'გრ' : 'g';
     return v.amount+unit;
   }).join(' · ');
 }
@@ -76,10 +79,6 @@ const T = {
     privTitle:'კონფიდენციალურობის პოლიტიკა',privLead:'',privP1:'',termsTitle:'გამოყენების წესები',termsLead:'',termsP1:'',viewFull:'სრული დოკუმენტის ნახვა',
     marqueeText:'· 100% არაბიკა · AVEK-ის ოფიციალური პარტნიორი, საბერძნეთი · ხელით შერჩეული ბლენდები ',
     footTbilisiHeading:'საქართველო, თბილისი',footTbilisiAddress:'ვასილ კოპცოვის 34ბ',footAthensHeading:'საბერძნეთი, ათენი',
-    heroH1:'თქვენი სანდო პარტნიორი ხარისხიან ყავაში',
-    heroSub:'ყავა, შოკოლადი და ჩაი — AVEK-ის (საბერძნეთი) ოფიციალური პარტნიორი საქართველოში, 100% არაბიკა და ხელით შერჩეული ბლენდები.',
-    heroCta1:'იხილეთ პროდუქცია',heroCta2:'პარტნიორობა/კონტაქტი',
-    themeToDark:'მუქი რეჟიმის ჩართვა',themeToLight:'ღია რეჟიმის ჩართვა',
     heroPlaceholder:'ფოტო მალე დაემატება', emptyProducts:'მალე დაემატება ახალი პროდუქტები', emptyBlog:'ბლოგის პირველი პოსტი მალე გამოქვეყნდება'},
   en:{home:'Home',blog:'Blog',contact:'Contact',about:'About Us',coffee:'Coffee',chocolate:'Chocolate',tea:'Tea',viewProduct:'Product details',
     blogEyebrow:'Journal',blogTitle:'The Blog',contactEyebrow:'Get in touch',contactTitle:'Contact',
@@ -90,10 +89,6 @@ const T = {
     privTitle:'Privacy Policy',privLead:'',privP1:'',termsTitle:'Terms of use',termsLead:'',termsP1:'',viewFull:'View full document',
     marqueeText:'· 100% Arabica · Official partner of AVEK, Greece · Hand-selected blends ',
     footTbilisiHeading:'Georgia, Tbilisi',footTbilisiAddress:'34b Vasil Koptsovi St',footAthensHeading:'Greece, Athens',
-    heroH1:'Your Trusted Partner in Quality Coffee',
-    heroSub:'Coffee, chocolate and tea — official partner of AVEK (Greece) in Georgia, 100% Arabica and hand-selected blends.',
-    heroCta1:'View Products',heroCta2:'Partnership / Contact',
-    themeToDark:'Switch to dark mode',themeToLight:'Switch to light mode',
     heroPlaceholder:'Photo coming soon', emptyProducts:'New products coming soon', emptyBlog:'The first blog post is coming soon'}
 };
 /* ---------- base path ----------
@@ -117,18 +112,10 @@ let lang='ka', activeCat='coffee', prodIndex=0, currentView='home', currentArtic
 let lastCat='coffee', lastIndex=0;
 
 /* ---------- theme ---------- */
-function updateThemeToggleA11y(t){
-  const btn = document.getElementById('themeToggle');
-  if(!btn) return;
-  const isDark = t === 'dark';
-  btn.setAttribute('aria-pressed', isDark ? 'true' : 'false');
-  btn.setAttribute('aria-label', isDark ? T[lang].themeToLight : T[lang].themeToDark);
-}
 function applyTheme(t){
   document.documentElement.setAttribute('data-theme', t);
   const mc = document.querySelector('meta[name="theme-color"]');
   if(mc) mc.setAttribute('content', t==='dark' ? '#1B1512' : '#F3E9DA');
-  updateThemeToggleA11y(t);
   try{ localStorage.setItem('doc-theme', t); }catch(e){}
 }
 function toggleTheme(){
@@ -151,7 +138,7 @@ function initTheme(){
 function updateSEO(pathAbs, titleSuffix){
   const base = "Doll's Coffee";
   document.title = titleSuffix ? (titleSuffix+' | '+base) : base+' — ყავა, შოკოლადი და ჩაი';
-  const full = 'https://dollscoffee.ge'+(pathAbs==='/'?'':pathAbs);
+  const full = 'https://www.dollscoffee.ge'+(pathAbs==='/'?'':pathAbs);
   const canon = document.querySelector('link[rel="canonical"]');
   if(canon) canon.setAttribute('href', full);
   const ogUrl = document.querySelector('meta[property="og:url"]');
@@ -190,13 +177,9 @@ function initReveal(){
     document.querySelectorAll('.reveal').forEach(el=>el.classList.add('in'));
     return;
   }
-  /* generous bottom margin so grid rows a couple of screens below the
-     fold reveal right after load instead of sitting invisible (opacity:0)
-     while still occupying their grid cell - that looked like a large
-     empty gap in the product grid on tall pages/short viewports. */
   revealObserver = new IntersectionObserver((entries)=>{
     entries.forEach(en=>{ if(en.isIntersecting){ en.target.classList.add('in'); revealObserver.unobserve(en.target); } });
-  },{threshold:0, rootMargin:'0px 0px 1200px 0px'});
+  },{threshold:0, rootMargin:'0px 0px 200px 0px'});
 }
 function observeReveal(container){
   initReveal();
@@ -239,23 +222,12 @@ function renderHero(){
   const heroEl=document.getElementById('hero');
   const slidesEl=document.getElementById('heroSlides');
   const dotsEl=document.getElementById('heroDots');
-  const prevBtn = heroEl ? heroEl.querySelector('.hero-arrow.prev') : null;
-  const nextBtn = heroEl ? heroEl.querySelector('.hero-arrow.next') : null;
   if(!slidesEl) return;
-  /* the hero headline/CTA overlay carries the page's only <h1> (SEO/a11y),
-     so it must stay visible even with zero photos - only the slider chrome
-     (slides, dots, arrows) is conditional on HERO having data. */
   if(!HERO.length){
-    slidesEl.innerHTML = '';
-    if(dotsEl) dotsEl.innerHTML = '';
-    if(prevBtn) prevBtn.hidden = true;
-    if(nextBtn) nextBtn.hidden = true;
-    if(heroEl) heroEl.classList.add('no-photo');
+    if(heroEl) heroEl.hidden = true;
     return;
   }
-  if(heroEl) heroEl.classList.remove('no-photo');
-  if(prevBtn) prevBtn.hidden = false;
-  if(nextBtn) nextBtn.hidden = false;
+  if(heroEl) heroEl.hidden = false;
   slidesEl.innerHTML = HERO.map(function(s,i){
     const bgStyle = "background-image:url('"+s.photo_url+"');background-size:cover;background-position:center;";
     const activeClass = i===0 ? ' active' : '';
@@ -281,10 +253,6 @@ function setHeroSlide(i){
   slides[heroIndex].classList.add('active');
   if(dots[heroIndex]) dots[heroIndex].classList.add('on');
 }
-function scrollToProducts(){
-  const el = document.getElementById('list-section');
-  if(el) el.scrollIntoView({behavior:'smooth', block:'start'});
-}
 function heroStep(dir){ setHeroSlide(heroIndex+dir); startHeroRotation(); }
 function goToHeroSlide(i){ setHeroSlide(i); startHeroRotation(); }
 function startHeroRotation(){
@@ -306,7 +274,6 @@ function setLang(l){
   if(currentView==='product') renderProductPage(true);
   renderBlog(); renderArticle();
   renderContactInfo(); renderContactLocations(); renderAboutPage();
-  updateThemeToggleA11y(document.documentElement.getAttribute('data-theme')==='dark' ? 'dark' : 'light');
 }
 function renderText(){
   document.querySelectorAll('[data-t]').forEach(el=>{const v=T[lang][el.dataset.t];if(v!==undefined)el.textContent=v;});
@@ -408,6 +375,7 @@ function renderProdList(){
     wrap.innerHTML = '<p class="empty-note">'+esc(T[lang].emptyProducts)+'</p>';
     return;
   }
+  const eagerCount = getColumnCount()*2; // already-visible cards above the fold - never delay their LCP-candidate photo
   list.forEach((p,i)=>{
     const card=document.createElement('button'); card.className='prod-card tap reveal'; card.style.transitionDelay=(Math.min(i,6)*20)+'ms'; card.onclick=()=>selectProduct(i);
     const swatchStyle = p.photo_url ? "background-size:contain;background-repeat:no-repeat;background-position:center;" : '';
@@ -417,7 +385,10 @@ function renderProdList(){
       +'<span class="row-bottom"><span class="rspec">'+esc(variantsText(p))+'</span>'
       +'<svg class="ico chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg></span>';
     wrap.appendChild(card);
-    if(p.photo_url){ lazyBackground(card.querySelector('.swatch'), p.photo_url); }
+    if(p.photo_url){
+      if(i < eagerCount){ card.querySelector('.swatch').style.backgroundImage = "url('"+p.photo_url+"')"; }
+      else { lazyBackground(card.querySelector('.swatch'), p.photo_url); }
+    }
   });
   observeReveal(wrap);
 }
@@ -768,10 +739,31 @@ window.addEventListener('popstate', function(){
   parseAndApplyRoute(location.pathname, false);
 });
 
+/* ---------- loading skeletons: reserve the grid/footer height that the
+   real content (rendered after the async fetchSiteData() resolves) will
+   occupy, so that content popping in doesn't cause a big layout shift. ---------- */
+function renderProdListSkeleton(){
+  const wrap = document.getElementById('prod-list');
+  if(!wrap) return;
+  const count = getColumnCount()*2;
+  let html = '';
+  for(let i=0;i<count;i++){
+    html += '<div class="prod-card skeleton-card" aria-hidden="true"><span class="swatch swatch-empty"></span><span class="rname">&nbsp;</span><span class="row-bottom"><span class="rspec">&nbsp;</span></span></div>';
+  }
+  wrap.innerHTML = html;
+}
+function renderFooterLocationsSkeleton(){
+  const el = document.getElementById('footer-locations');
+  if(!el) return;
+  el.innerHTML = '<div class="foot-block skeleton-block" aria-hidden="true"><h4>&nbsp;</h4><span class="foot-line">&nbsp;</span><span class="foot-line">&nbsp;</span></div>';
+}
+
 (async function init(){
   document.querySelectorAll('[data-base-src]').forEach(function(el){
     el.src = withBase(el.getAttribute('data-base-src'));
   });
+  renderProdListSkeleton();
+  renderFooterLocationsSkeleton();
   await fetchSiteData();
   if(SECTIONS.length){ activeCat = SECTIONS.some(function(s){ return s.slug===activeCat; }) ? activeCat : SECTIONS[0].slug; }
   renderCategoryButtons();

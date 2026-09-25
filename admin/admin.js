@@ -25,6 +25,11 @@ function wireSlugAutoFill(nameInput, slugInput, alreadyTouched){
   });
   return state;
 }
+function unitLabel(unit){
+  if (unit === 'kg') return 'კგ';
+  if (unit === 'pcs') return ' ცალი';
+  return 'გრ';
+}
 function friendlyError(err){
   const msg = (err && err.message) || String(err);
   if (msg.indexOf('duplicate key value') !== -1) return 'ეს slug უკვე გამოყენებულია — აირჩიე სხვა.';
@@ -42,6 +47,7 @@ let contactMessages = [];
 let contactLocations = [];
 let heroSortable = null;
 let sectionsSortable = null;
+let productsSortable = null;
 let newSectionSlugState = null;
 let quillKa = null;
 let quillEn = null;
@@ -354,6 +360,10 @@ function renderSections(){
     const id = card.dataset.id;
     card.querySelector('[data-act="save"]').addEventListener('click', function(){ saveSection(id, card); });
     card.querySelector('[data-act="delete"]').addEventListener('click', function(){ deleteSection(id); });
+    card.querySelector('.f-visible').addEventListener('change', async function(e){
+      const { error } = await sb.from('sections').update({ is_visible: e.target.checked }).eq('id', id);
+      if (error) { alert(friendlyError(error)); e.target.checked = !e.target.checked; }
+    });
   });
   if (sections.length) {
     sectionsSortable = Sortable.create(root, {
@@ -422,6 +432,7 @@ function renderProductSectionFilter(){
 }
 function renderProducts(){
   const root = $('#productsList');
+  if (productsSortable) { productsSortable.destroy(); productsSortable = null; }
   if (!sections.length) { root.innerHTML = '<p class="empty">ჯერ არცერთი სექცია არ არსებობს — ჯერ სექცია შექმენი „სექციები" ტაბში.</p>'; return; }
 
   const sectionId = $('#productSectionFilter').value;
@@ -452,9 +463,10 @@ function renderProducts(){
         '<div class="product-info">' +
           (sectionId ? '' : '<div class="product-section-badge">' + esc(sec ? sec.name_ka : '') + '</div>') +
           '<div class="product-name">' + esc(p.name_ka) + ' <span class="muted">/ ' + esc(p.name_en) + '</span></div>' +
-          '<div class="product-variants">' + ((p.variants || []).map(function(v){ return v.amount + v.unit; }).join(' · ') || '<span class="muted">ვარიანტები არ არის</span>') + '</div>' +
+          '<div class="product-variants">' + ((p.variants || []).map(function(v){ return v.amount + unitLabel(v.unit); }).join(' · ') || '<span class="muted">ვარიანტები არ არის</span>') + '</div>' +
         '</div>' +
         '<div class="card-actions">' +
+          (showReorder ? '<span class="drag-handle" title="გადათრევით დალაგება">⠿</span>' : '') +
           (showReorder ? '<button class="icon-btn" data-act="up"' + (i === 0 ? ' disabled' : '') + '>↑</button>' : '') +
           (showReorder ? '<button class="icon-btn" data-act="down"' + (i === list.length - 1 ? ' disabled' : '') + '>↓</button>' : '') +
           '<label class="toggle"><input type="checkbox" class="f-visible"' + (p.is_visible ? ' checked' : '') + '> ხილული</label>' +
@@ -490,6 +502,19 @@ function renderProducts(){
       await loadProducts();
     });
   });
+
+  if (showReorder && list.length > 1) {
+    productsSortable = Sortable.create(root, {
+      handle: '.drag-handle',
+      draggable: '.product-card',
+      animation: 150,
+      forceFallback: true,
+      onEnd: async function(){
+        const ids = $all('.product-card', root).map(function(el){ return el.dataset.id; });
+        if (await persistOrder('products', ids)) await loadProducts();
+      }
+    });
+  }
 }
 
 function closeModal(){ $('#modalRoot').innerHTML = ''; }
@@ -539,7 +564,11 @@ function openProductModal(product, presetSectionId){
     row.className = 'variant-row';
     row.innerHTML = (
       '<input type="number" min="0" step="1" class="v-amount" placeholder="წონა" value="' + (amount || '') + '">' +
-      '<select class="v-unit"><option value="gr"' + (unit === 'kg' ? '' : ' selected') + '>გრ</option><option value="kg"' + (unit === 'kg' ? ' selected' : '') + '>კგ</option></select>' +
+      '<select class="v-unit">' +
+        '<option value="gr"' + (unit === 'kg' || unit === 'pcs' ? '' : ' selected') + '>გრ</option>' +
+        '<option value="kg"' + (unit === 'kg' ? ' selected' : '') + '>კგ</option>' +
+        '<option value="pcs"' + (unit === 'pcs' ? ' selected' : '') + '>ცალი</option>' +
+      '</select>' +
       '<button type="button" class="icon-btn v-remove">×</button>'
     );
     row.querySelector('.v-remove').addEventListener('click', function(){ row.remove(); });
@@ -548,7 +577,8 @@ function openProductModal(product, presetSectionId){
     amountInput.addEventListener('input', function(){
       const val = Number(amountInput.value);
       if (!amountInput.value || !val) return; // empty, 0, or invalid - leave the unit untouched
-      unitSelect.value = val <= 10 ? 'kg' : 'gr';
+      const sec = sections.find(function(s){ return s.id === $('#pfSection').value; });
+      unitSelect.value = (sec && sec.slug === 'tea') ? 'pcs' : (val <= 10 ? 'kg' : 'gr');
     });
     rowsRoot.appendChild(row);
   }
