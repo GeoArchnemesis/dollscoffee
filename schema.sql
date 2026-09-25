@@ -81,7 +81,7 @@ drop trigger if exists trg_hero_slides_updated_at on public.hero_slides;
 create trigger trg_hero_slides_updated_at before update on public.hero_slides
   for each row execute function public.set_updated_at();
 
--- ---------- variants JSON-ის ვალიდაცია: [{amount:number>0, unit:'gr'|'kg'}] ----------
+-- ---------- variants JSON-ის ვალიდაცია: [{amount:number>0, unit:'gr'|'kg'|'pcs'}] ----------
 create or replace function public.validate_product_variants()
 returns trigger language plpgsql as $$
 declare
@@ -97,8 +97,8 @@ begin
     if jsonb_typeof(v->'amount') <> 'number' or (v->>'amount')::numeric <= 0 then
       raise exception 'variant amount must be a positive number';
     end if;
-    if v->>'unit' not in ('gr','kg') then
-      raise exception 'variant unit must be gr or kg';
+    if v->>'unit' not in ('gr','kg','pcs') then
+      raise exception 'variant unit must be gr, kg, or pcs';
     end if;
   end loop;
   return new;
