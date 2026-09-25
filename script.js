@@ -58,7 +58,7 @@ function variantsText(p){
   return p.variants.map(function(v){
     var unit;
     if (v.unit === 'kg') unit = lang==='ka' ? 'კგ' : 'kg';
-    else if (v.unit === 'pcs') unit = lang==='ka' ? ' ცალი' : ' Pcs';
+    else if (v.unit === 'pcs') unit = lang==='ka' ? ' პაკეტი' : ' Pcs';
     else unit = lang==='ka' ? 'გრ' : 'g';
     return v.amount+unit;
   }).join(' · ');
