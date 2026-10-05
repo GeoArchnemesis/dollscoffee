@@ -60,6 +60,17 @@ create table if not exists public.hero_slides (
   updated_at timestamptz not null default now()
 );
 
+create table if not exists public.partners (
+  id uuid primary key default gen_random_uuid(),
+  name text,
+  logo_url text not null,
+  link_url text,
+  sort_order integer not null default 0,
+  is_visible boolean not null default true,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
 -- ერთადერთი ადმინის allow-list — RLS ჩართულია, პოლისები არ არსებობს,
 -- ანუ ამ ცხრილს anon/authenticated საერთოდ ვერ წვდება პირდაპირ.
 -- მხოლოდ SQL Editor-იდან (superuser) შეგიძლია ჩანაწერის დამატება.
@@ -79,6 +90,10 @@ create trigger trg_products_updated_at before update on public.products
 
 drop trigger if exists trg_hero_slides_updated_at on public.hero_slides;
 create trigger trg_hero_slides_updated_at before update on public.hero_slides
+  for each row execute function public.set_updated_at();
+
+drop trigger if exists trg_partners_updated_at on public.partners;
+create trigger trg_partners_updated_at before update on public.partners
   for each row execute function public.set_updated_at();
 
 -- ---------- variants JSON-ის ვალიდაცია: [{amount:number>0, unit:'gr'|'kg'|'pcs'}] ----------
@@ -129,6 +144,7 @@ $$;
 alter table public.sections enable row level security;
 alter table public.products enable row level security;
 alter table public.hero_slides enable row level security;
+alter table public.partners enable row level security;
 
 -- sections: საჯარო კითხვა მხოლოდ ხილულებზე, ადმინს ყველაფრის ნახვა/წერა შეუძლია
 drop policy if exists "sections_select" on public.sections;
@@ -170,6 +186,20 @@ create policy "hero_slides_update" on public.hero_slides
   for update using (public.is_admin()) with check (public.is_admin());
 drop policy if exists "hero_slides_delete" on public.hero_slides;
 create policy "hero_slides_delete" on public.hero_slides
+  for delete using (public.is_admin());
+
+-- partners
+drop policy if exists "partners_select" on public.partners;
+create policy "partners_select" on public.partners
+  for select using (is_visible = true or public.is_admin());
+drop policy if exists "partners_insert" on public.partners;
+create policy "partners_insert" on public.partners
+  for insert with check (public.is_admin());
+drop policy if exists "partners_update" on public.partners;
+create policy "partners_update" on public.partners
+  for update using (public.is_admin()) with check (public.is_admin());
+drop policy if exists "partners_delete" on public.partners;
+create policy "partners_delete" on public.partners
   for delete using (public.is_admin());
 
 -- =========================================================

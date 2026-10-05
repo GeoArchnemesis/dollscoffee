@@ -40,12 +40,14 @@ function friendlyError(err){
 let sections = [];
 let products = [];
 let heroSlides = [];
+let partners = [];
 let blogPosts = [];
 let contactInfo = null;
 let aboutPageData = null;
 let contactMessages = [];
 let contactLocations = [];
 let heroSortable = null;
+let partnersSortable = null;
 let sectionsSortable = null;
 let productsSortable = null;
 let newSectionSlugState = null;
@@ -243,7 +245,7 @@ async function swapSortOrder(table, list, id, dir){
 /* ---------- load ---------- */
 async function loadAll(){
   await loadSections();
-  await Promise.all([loadHero(), loadProducts(), loadBlogPosts(), loadContactInfo(), loadContactLocations(), loadAboutPage(), loadMessages()]);
+  await Promise.all([loadHero(), loadProducts(), loadBlogPosts(), loadContactInfo(), loadContactLocations(), loadAboutPage(), loadMessages(), loadPartners()]);
 }
 async function loadSections(){
   const { data, error } = await sb.from('sections').select('*').order('sort_order');
@@ -257,6 +259,12 @@ async function loadHero(){
   if (error) { alert('Hero ფოტოების ჩატვირთვის შეცდომა: ' + error.message); return; }
   heroSlides = data || [];
   renderHero();
+}
+async function loadPartners(){
+  const { data, error } = await sb.from('partners').select('*').order('sort_order');
+  if (error) { alert('პარტნიორების ჩატვირთვის შეცდომა: ' + error.message); return; }
+  partners = data || [];
+  renderPartners();
 }
 async function loadProducts(){
   const { data, error } = await sb.from('products').select('*').order('sort_order');
@@ -326,6 +334,80 @@ async function handleHeroFileChange(e){
     const { error } = await sb.from('hero_slides').insert({ photo_url: url, sort_order: sort_order, is_active: true });
     if (error) throw error;
     await loadHero();
+  } catch (err) {
+    alert('ატვირთვის შეცდომა: ' + friendlyError(err));
+  }
+}
+
+/* ---------- partners ---------- */
+function renderPartners(){
+  const root = $('#partnersList');
+  if (partnersSortable) { partnersSortable.destroy(); partnersSortable = null; }
+  if (!partners.length) { root.innerHTML = '<p class="empty">ჯერ არცერთი ლოგო არ არის ატვირთული.</p>'; return; }
+  root.innerHTML = partners.map(function(p){
+    return (
+      '<div class="hero-card partner-card" data-id="' + p.id + '">' +
+        '<img src="' + esc(p.logo_url) + '" alt="">' +
+        '<div class="hero-card-link">' +
+          '<input type="text" class="f-name" placeholder="სახელი (არასავალდებულო)" value="' + esc(p.name || '') + '">' +
+        '</div>' +
+        '<div class="hero-card-link">' +
+          '<input type="url" class="f-link" placeholder="ლინკი (არასავალდებულო) — მაგ. https://..." value="' + esc(p.link_url || '') + '">' +
+        '</div>' +
+        '<div class="hero-card-actions">' +
+          '<span class="drag-handle" title="გადათრევით დალაგება">⠿</span>' +
+          '<label class="toggle"><input type="checkbox" class="f-visible"' + (p.is_visible ? ' checked' : '') + '> ხილული</label>' +
+          '<button class="btn small danger" data-act="delete">წაშლა</button>' +
+        '</div>' +
+      '</div>'
+    );
+  }).join('');
+  $all('.partner-card', root).forEach(function(card){
+    const id = card.dataset.id;
+    card.querySelector('.f-visible').addEventListener('change', async function(e){
+      const { error } = await sb.from('partners').update({ is_visible: e.target.checked }).eq('id', id);
+      if (error) { alert(friendlyError(error)); e.target.checked = !e.target.checked; }
+    });
+    card.querySelector('.f-name').addEventListener('change', async function(e){
+      const value = e.target.value.trim();
+      const { error } = await sb.from('partners').update({ name: value || null }).eq('id', id);
+      if (error) alert(friendlyError(error));
+    });
+    card.querySelector('.f-link').addEventListener('change', async function(e){
+      const value = e.target.value.trim();
+      const { error } = await sb.from('partners').update({ link_url: value || null }).eq('id', id);
+      if (error) alert(friendlyError(error));
+    });
+    card.querySelector('[data-act="delete"]').addEventListener('click', async function(){
+      if (!confirm('წავშალო ეს ლოგო?')) return;
+      const partner = partners.find(function(p){ return p.id === id; });
+      const { error } = await sb.from('partners').delete().eq('id', id);
+      if (error) { alert(friendlyError(error)); return; }
+      if (partner) await deleteImage(partner.logo_url);
+      await loadPartners();
+    });
+  });
+  partnersSortable = Sortable.create(root, {
+    handle: '.drag-handle',
+    draggable: '.partner-card',
+    animation: 150,
+    forceFallback: true,
+    onEnd: async function(){
+      const ids = $all('.partner-card', root).map(function(el){ return el.dataset.id; });
+      if (await persistOrder('partners', ids)) await loadPartners();
+    }
+  });
+}
+async function handlePartnerFileChange(e){
+  const file = e.target.files[0];
+  e.target.value = '';
+  if (!file) return;
+  try {
+    const url = await uploadImage(file, 'partners', 400, 200, 120 * 1024);
+    const sort_order = partners.length ? Math.max.apply(null, partners.map(function(p){ return p.sort_order; })) + 1 : 0;
+    const { error } = await sb.from('partners').insert({ logo_url: url, sort_order: sort_order, is_visible: true });
+    if (error) throw error;
+    await loadPartners();
   } catch (err) {
     alert('ატვირთვის შეცდომა: ' + friendlyError(err));
   }
@@ -1044,6 +1126,7 @@ document.addEventListener('DOMContentLoaded', function(){
     });
   });
   $('#heroFileInput').addEventListener('change', handleHeroFileChange);
+  $('#partnerFileInput').addEventListener('change', handlePartnerFileChange);
   $('#createSectionBtn').addEventListener('click', createSection);
   newSectionSlugState = wireSlugAutoFill($('#newSectionEn'), $('#newSectionSlug'), false);
   $('#addProductBtn').addEventListener('click', function(){

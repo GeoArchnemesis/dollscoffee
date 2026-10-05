@@ -9,23 +9,26 @@ const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
 let SECTIONS = [];   // [{id,slug,name_ka,name_en,accent_color,sort_order}, ...]
 let PRODUCTS = {};   // slug -> [{id,slug,name_ka,name_en,description_ka,description_en,photo_url,variants,sort_order}, ...]
 let HERO = [];        // [{id,photo_url,sort_order}, ...]
+let PARTNERS = [];    // [{id,name,logo_url,link_url,sort_order}, ...]
 let BLOG = [];        // [{id,slug,title_ka,title_en,cover_photo_url,body_ka,body_en,published_at,is_published}, ...]
 let CONTACT = null;   // {email} - phone/address_ka/address_en are deprecated, see contact_locations
 let ABOUT = null;     // {title_ka,title_en,body_ka,body_en}
 let LOCATIONS = [];   // [{id,label_ka,label_en,address_ka,address_en,phones,sort_order,is_visible}, ...]
 
 async function fetchSiteData(){
-  const [secRes, prodRes, heroRes, blogRes, contactRes, aboutRes, locRes] = await Promise.all([
+  const [secRes, prodRes, heroRes, blogRes, contactRes, aboutRes, locRes, partnersRes] = await Promise.all([
     sb.from('sections').select('*').eq('is_visible', true).order('sort_order'),
     sb.from('products').select('*').eq('is_visible', true).order('sort_order'),
     sb.from('hero_slides').select('*').eq('is_active', true).order('sort_order'),
     sb.from('blog_posts').select('*').eq('is_published', true).order('published_at', { ascending: false }),
     sb.from('contact_info').select('*').eq('id', 1).maybeSingle(),
     sb.from('about_page').select('*').eq('id', 1).maybeSingle(),
-    sb.from('contact_locations').select('*').eq('is_visible', true).order('sort_order')
+    sb.from('contact_locations').select('*').eq('is_visible', true).order('sort_order'),
+    sb.from('partners').select('*').eq('is_visible', true).order('sort_order')
   ]);
   SECTIONS = secRes.data || [];
   HERO = heroRes.data || [];
+  PARTNERS = partnersRes.data || [];
   BLOG = blogRes.data || [];
   CONTACT = contactRes.data || null;
   ABOUT = aboutRes.data || null;
@@ -79,6 +82,10 @@ const T = {
     privTitle:'კონფიდენციალურობის პოლიტიკა',privLead:'',privP1:'',termsTitle:'გამოყენების წესები',termsLead:'',termsP1:'',viewFull:'სრული დოკუმენტის ნახვა',
     marqueeText:'· 100% არაბიკა · AVEK-ის ოფიციალური პარტნიორი, საბერძნეთი · ხელით შერჩეული ბლენდები ',
     footTbilisiHeading:'საქართველო, თბილისი',footTbilisiAddress:'ვასილ კოპცოვის 34ბ',footAthensHeading:'საბერძნეთი, ათენი',
+    heroH1:'პრემიუმ ყავა, შოკოლადი და ჩაი',
+    heroSub:'AVEK-ის (საბერძნეთი) ოფიციალური პარტნიორი საქართველოში — 100% არაბიკა და ხელით შერჩეული ბლენდები.',
+    heroCta1:'იხილეთ პროდუქცია',heroCta2:'პარტნიორობა/კონტაქტი',
+    partnersTitle:'ჩვენი პარტნიორები',
     heroPlaceholder:'ფოტო მალე დაემატება', emptyProducts:'მალე დაემატება ახალი პროდუქტები', emptyBlog:'ბლოგის პირველი პოსტი მალე გამოქვეყნდება'},
   en:{home:'Home',blog:'Blog',contact:'Contact',about:'About Us',coffee:'Coffee',chocolate:'Chocolate',tea:'Tea',viewProduct:'Product details',
     blogEyebrow:'Journal',blogTitle:'The Blog',contactEyebrow:'Get in touch',contactTitle:'Contact',
@@ -89,6 +96,10 @@ const T = {
     privTitle:'Privacy Policy',privLead:'',privP1:'',termsTitle:'Terms of use',termsLead:'',termsP1:'',viewFull:'View full document',
     marqueeText:'· 100% Arabica · Official partner of AVEK, Greece · Hand-selected blends ',
     footTbilisiHeading:'Georgia, Tbilisi',footTbilisiAddress:'34b Vasil Koptsovi St',footAthensHeading:'Greece, Athens',
+    heroH1:'Premium Coffee, Chocolate & Tea',
+    heroSub:'Official partner of AVEK (Greece) in Georgia — 100% Arabica and hand-selected blends.',
+    heroCta1:'View Products',heroCta2:'Partnership / Contact',
+    partnersTitle:'Our Partners',
     heroPlaceholder:'Photo coming soon', emptyProducts:'New products coming soon', emptyBlog:'The first blog post is coming soon'}
 };
 /* ---------- base path ----------
@@ -252,6 +263,24 @@ function setHeroSlide(i){
   heroIndex=(i+slides.length)%slides.length;
   slides[heroIndex].classList.add('active');
   if(dots[heroIndex]) dots[heroIndex].classList.add('on');
+}
+/* ---------- partners: logo row above the footer, hidden when none are visible ---------- */
+function renderPartners(){
+  const section = document.getElementById('partners-section');
+  const row = document.getElementById('partnersRow');
+  if(!section || !row) return;
+  if(!PARTNERS.length){ section.hidden = true; return; }
+  section.hidden = false;
+  row.innerHTML = PARTNERS.map(function(p){
+    const img = '<img src="'+esc(p.logo_url)+'" alt="'+esc(p.name||'')+'" loading="lazy">';
+    return p.link_url
+      ? '<a class="partner-logo" href="'+esc(p.link_url)+'" target="_blank" rel="noopener noreferrer">'+img+'</a>'
+      : '<span class="partner-logo">'+img+'</span>';
+  }).join('');
+}
+function scrollToProducts(){
+  const el = document.getElementById('list-section');
+  if(el) el.scrollIntoView({behavior:'smooth', block:'start'});
 }
 function heroStep(dir){ setHeroSlide(heroIndex+dir); startHeroRotation(); }
 function goToHeroSlide(i){ setHeroSlide(i); startHeroRotation(); }
@@ -768,6 +797,7 @@ function renderFooterLocationsSkeleton(){
   if(SECTIONS.length){ activeCat = SECTIONS.some(function(s){ return s.slug===activeCat; }) ? activeCat : SECTIONS[0].slug; }
   renderCategoryButtons();
   renderHero();
+  renderPartners();
   startHeroRotation();
   initTheme();
   document.getElementById('ka').classList.add('active');

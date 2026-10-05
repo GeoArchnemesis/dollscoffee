@@ -19,7 +19,7 @@
     if (seg) base = '/' + seg;
   }
   window.BASE_PATH = base;
-  document.write('<link rel="stylesheet" href="'+base+'/styles.css?v=16">');
+  document.write('<link rel="stylesheet" href="'+base+'/styles.css?v=18">');
 })();
 </script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -75,6 +75,14 @@
 <section class="page show" id="page-home">
   <div class="hero" id="hero" role="region" aria-label="ბრენდის ფოტოები">
     <div class="hero-slides" id="heroSlides"></div>
+    <div class="hero-overlay">
+      <h1 id="heroH1" data-t="heroH1">პრემიუმ ყავა, შოკოლადი და ჩაი</h1>
+      <p id="heroSub" data-t="heroSub">AVEK-ის (საბერძნეთი) ოფიციალური პარტნიორი საქართველოში — 100% არაბიკა და ხელით შერჩეული ბლენდები.</p>
+      <div class="hero-cta">
+        <button class="btn solid tap" onclick="scrollToProducts()" data-t="heroCta1">იხილეთ პროდუქცია</button>
+        <button class="btn ghost tap" onclick="go('contact')" data-t="heroCta2">პარტნიორობა/კონტაქტი</button>
+      </div>
+    </div>
     <button class="hero-arrow prev" onclick="heroStep(-1)" aria-label="წინა ფოტო"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg></button>
     <button class="hero-arrow next" onclick="heroStep(1)" aria-label="შემდეგი ფოტო"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg></button>
     <div class="hero-dots" id="heroDots"></div>
@@ -156,6 +164,11 @@
 </section>
 </main>
 
+<section id="partners-section" class="wrap partners-section" hidden>
+  <h2 data-t="partnersTitle"></h2>
+  <div class="partners-row" id="partnersRow"></div>
+</section>
+
 <footer>
   <div class="wrap foot-grid">
     <div class="foot-block">
@@ -193,6 +206,6 @@
 </footer>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js"></script>
-<script>document.write('<script src="'+window.BASE_PATH+'/script.js?v=17" defer><\/script>');</script>
+<script>document.write('<script src="'+window.BASE_PATH+'/script.js?v=19" defer><\/script>');</script>
 </body>
 </html>
