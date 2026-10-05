@@ -347,7 +347,6 @@ footer{flex-shrink:0;background:var(--surface-dark);color:var(--surface-dark-tex
 .partners-section{padding:40px 0 10px;text-align:center}
 .partners-section h2{font-size:clamp(18px,2.2vw,24px);margin:0 0 22px}
 .partners-row{display:flex;flex-wrap:wrap;gap:28px;justify-content:center;align-items:center}
-.partner-logo{display:inline-flex;align-items:center;justify-content:center;height:220px}
-.partner-logo img{max-height:100%;max-width:280px;object-fit:contain;filter:grayscale(1);opacity:.65;transition:filter .25s,opacity .25s}
-.partner-logo:hover img{filter:grayscale(0);opacity:1}
-@media (max-width:640px){.partners-row{gap:16px}.partner-logo{height:140px}.partner-logo img{max-width:190px}}
+.partner-logo{display:inline-flex;align-items:center;justify-content:center;height:264px}
+.partner-logo img{max-height:100%;max-width:336px;object-fit:contain}
+@media (max-width:640px){.partners-row{gap:16px}.partner-logo{height:168px}.partner-logo img{max-width:228px}}
