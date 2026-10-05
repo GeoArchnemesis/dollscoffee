@@ -85,7 +85,7 @@ const T = {
     heroH1:'პრემიუმ ყავა, შოკოლადი და ჩაი',
     heroSub:'AVEK-ის (საბერძნეთი) ოფიციალური პარტნიორი საქართველოში — 100% არაბიკა და ხელით შერჩეული ბლენდები.',
     heroCta1:'იხილეთ პროდუქცია',heroCta2:'პარტნიორობა/კონტაქტი',
-    partnersTitle:'ჩვენი პარტნიორები',
+    partnersEyebrow:'პარტნიორობა',partnersTitle:'პარტნიორი კომპანიები',
     heroPlaceholder:'ფოტო მალე დაემატება', emptyProducts:'მალე დაემატება ახალი პროდუქტები', emptyBlog:'ბლოგის პირველი პოსტი მალე გამოქვეყნდება'},
   en:{home:'Home',blog:'Blog',contact:'Contact',about:'About Us',coffee:'Coffee',chocolate:'Chocolate',tea:'Tea',viewProduct:'Product details',
     blogEyebrow:'Journal',blogTitle:'The Blog',contactEyebrow:'Get in touch',contactTitle:'Contact',
@@ -99,7 +99,7 @@ const T = {
     heroH1:'Premium Coffee, Chocolate & Tea',
     heroSub:'Official partner of AVEK (Greece) in Georgia — 100% Arabica and hand-selected blends.',
     heroCta1:'View Products',heroCta2:'Partnership / Contact',
-    partnersTitle:'Our Partners',
+    partnersEyebrow:'Partnership',partnersTitle:'Partner Companies',
     heroPlaceholder:'Photo coming soon', emptyProducts:'New products coming soon', emptyBlog:'The first blog post is coming soon'}
 };
 /* ---------- base path ----------
@@ -272,10 +272,12 @@ function renderPartners(){
   if(!PARTNERS.length){ section.hidden = true; return; }
   section.hidden = false;
   row.innerHTML = PARTNERS.map(function(p){
-    const img = '<img src="'+esc(p.logo_url)+'" alt="'+esc(p.name||'')+'" loading="lazy">';
+    const frame = '<span class="partner-frame"><img src="'+esc(p.logo_url)+'" alt="'+esc(p.name||'')+'" loading="lazy"></span>';
+    const nameHtml = p.name ? '<span class="partner-name">'+esc(p.name)+'</span>' : '';
+    const inner = frame + nameHtml;
     return p.link_url
-      ? '<a class="partner-logo" href="'+esc(p.link_url)+'" target="_blank" rel="noopener noreferrer">'+img+'</a>'
-      : '<span class="partner-logo">'+img+'</span>';
+      ? '<a class="partner-item" href="'+esc(p.link_url)+'" target="_blank" rel="noopener noreferrer">'+inner+'</a>'
+      : '<span class="partner-item">'+inner+'</span>';
   }).join('');
 }
 function scrollToProducts(){
