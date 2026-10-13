@@ -210,7 +210,11 @@ html[data-theme="dark"] .theme-toggle .sun{display:block}
 .pf-body{transition:opacity .22s ease, transform .22s ease;min-width:0}
 .pf-body.fade{opacity:0;transform:translateY(6px)}
 .pf-body .cat{text-transform:uppercase;letter-spacing:.24em;font-size:12px;font-weight:600;color:var(--accent);margin-bottom:14px;font-family:var(--sans)}
-.pf-body h1{font-size:clamp(28px,4.2vw,46px);overflow-wrap:anywhere}
+/* h1,h2 (not just h1): functions/[[path]].js demotes this heading to h2 in
+   server responses where a DIFFERENT page was the matched SEO route (see
+   seoplan.md item 8) - client-side SPA navigation to this page afterward
+   never changes the tag back, so styling must apply the same either way. */
+.pf-body h1,.pf-body h2{font-size:clamp(28px,4.2vw,46px);overflow-wrap:anywhere}
 .pf-body .blend{font-family:var(--serif-lat);font-style:italic;color:var(--ink-soft);margin-top:10px;font-size:17px}
 .pf-body .blend:empty{display:none}
 .pf-body .desc{margin-top:18px;color:var(--ink-soft);font-size:16px;font-family:var(--sans)}
@@ -220,7 +224,8 @@ html[data-theme="dark"] .theme-toggle .sun{display:block}
 .section-head{padding:46px 0 8px}
 .section-head .eyebrow{text-transform:uppercase;letter-spacing:.3em;font-size:12px;color:var(--accent);font-weight:600;font-family:var(--sans);margin-bottom:14px;position:relative;display:inline-block;padding-bottom:12px}
 .section-head .eyebrow::after{content:"";position:absolute;left:0;bottom:0;width:32px;height:2px;background:var(--accent)}
-.section-head h1{font-size:clamp(34px,6vw,64px)}
+/* h1,h2 - see the .pf-body h1,h2 comment above */
+.section-head h1,.section-head h2{font-size:clamp(34px,6vw,64px)}
 .blog-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:22px;padding:30px 0 60px}
 .post{background:var(--paper);border:1px solid var(--line);border-radius:20px;overflow:hidden;cursor:pointer;min-width:0}
 /* ბლოგის პოსტების Hover ჩრდილის გარეშე */
@@ -288,7 +293,8 @@ form{background:var(--paper);border:1px solid var(--line);border-radius:22px;pad
 .legal .official{margin-top:22px}
 
 .about-content{max-width:760px;margin-inline:auto;padding:46px 0 70px}
-.about-content h1{font-size:clamp(30px,5vw,50px);margin-bottom:24px}
+/* h1,h2 - see the .pf-body h1,h2 comment above */
+.about-content h1,.about-content h2{font-size:clamp(30px,5vw,50px);margin-bottom:24px}
 .about-content .article-content:empty{display:none}
 
 /* cookie consent bar */

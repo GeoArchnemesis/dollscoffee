@@ -119,7 +119,26 @@ function stripBase(path){
   return path;
 }
 
-let lang='ka', activeCat='coffee', prodIndex=0, currentView='home', currentArticle=null;
+/* ---------- language-prefixed URLs ----------
+   INITIAL_LANG is injected by functions/[[path]].js the same way BASE_PATH
+   is injected above, for whichever language that request's URL resolved to
+   (ka or /en/...). withLang()/stripLangPrefix() are the client-side mirror
+   of that same Function's urlFor()/matchRoute() path logic, so client-side
+   navigation (pushState) keeps producing/recognizing /en-prefixed URLs
+   after the initial load, instead of "losing" the language the way a pure
+   UI-only toggle would. */
+const INITIAL_LANG = window.INITIAL_LANG === 'en' ? 'en' : 'ka';
+function withLang(p){
+  if(lang !== 'en') return p;
+  return p==='/' ? '/en' : '/en'+p;
+}
+function stripLangPrefix(path){
+  if(path === '/en') return '/';
+  if(path.indexOf('/en/') === 0) return path.slice(3);
+  return path;
+}
+
+let lang=INITIAL_LANG, activeCat='coffee', prodIndex=0, currentView='home', currentArticle=null;
 let lastCat='coffee', lastIndex=0;
 
 /* ---------- theme ---------- */
@@ -149,7 +168,11 @@ function initTheme(){
 function updateSEO(pathAbs, titleSuffix){
   const base = "Doll's Coffee";
   document.title = titleSuffix ? (titleSuffix+' | '+base) : base+' — ყავა, შოკოლადი და ჩაი';
-  const full = 'https://dollscoffee.ge'+(pathAbs==='/'?'':pathAbs);
+  /* self-referencing canonical, mirroring functions/[[path]].js's rule
+     exactly: this is always the CURRENT page's own URL (ka or /en/...),
+     never the other language's - see seoplan.md. */
+  const fullPath = withLang(pathAbs);
+  const full = 'https://dollscoffee.ge'+(fullPath==='/'?'':fullPath);
   const canon = document.querySelector('link[rel="canonical"]');
   if(canon) canon.setAttribute('href', full);
   const ogUrl = document.querySelector('meta[property="og:url"]');
@@ -294,6 +317,28 @@ function startHeroRotation(){
 }
 
 function toggleLang(){ setLang(lang==='ka' ? 'en' : 'ka'); }
+/* the current view's own (unprefixed) path + title, reused both by go()'s
+   titleMap logic and here, so toggling language also updates the URL/
+   canonical to the other language's URL for whatever's currently showing
+   - without this, hreflang would be correct on first load but "lost" the
+   moment someone used the GE/EN toggle instead of clicking a nav link. */
+function currentPathAndTitle(){
+  if(currentView==='product'){
+    const list = PRODUCTS[activeCat]||[];
+    const p = list[prodIndex];
+    return { path: p ? '/'+activeCat+'/'+p.slug : '/', title: p ? p['name_'+lang] : null };
+  }
+  if(currentView==='article' && currentArticle){
+    const p = BLOG.find(function(x){ return x.slug===currentArticle; });
+    return { path: '/blog/'+currentArticle, title: p ? p['title_'+lang] : null };
+  }
+  if(PAGE_PATHS[currentView] !== undefined){
+    const aboutTitle = (ABOUT && ABOUT['title_'+lang]) || T[lang].aboutTitle;
+    const titleMap={home:null,blog:T[lang].blogTitle,about:aboutTitle,contact:T[lang].contactTitle,privacy:T[lang].privTitle,terms:T[lang].termsTitle};
+    return { path: PAGE_PATHS[currentView], title: titleMap[currentView] };
+  }
+  return { path: '/', title: null };
+}
 function setLang(l){
   lang=l; document.documentElement.lang=l;
   document.getElementById('ka').classList.toggle('active',l==='ka');
@@ -305,6 +350,9 @@ function setLang(l){
   if(currentView==='product') renderProductPage(true);
   renderBlog(); renderArticle();
   renderContactInfo(); renderContactLocations(); renderAboutPage();
+  const cur = currentPathAndTitle();
+  try{ history.replaceState({view:currentView}, '', withBase(withLang(cur.path))); }catch(e){}
+  updateSEO(cur.path, cur.title);
 }
 function renderText(){
   document.querySelectorAll('[data-t]').forEach(el=>{const v=T[lang][el.dataset.t];if(v!==undefined)el.textContent=v;});
@@ -324,7 +372,7 @@ function go(view, opts){
   };
   withTransition(doIt);
   if(push && PAGE_PATHS[view]!==undefined){
-    try{ history.pushState({view:view}, '', withBase(PAGE_PATHS[view])); }catch(e){}
+    try{ history.pushState({view:view}, '', withBase(withLang(PAGE_PATHS[view]))); }catch(e){}
   }
   window.scrollTo({top:0});
   if(PAGE_PATHS[view]!==undefined){
@@ -566,7 +614,7 @@ function openProductPage(cat,slug,fromUI,push){
     renderProductPage(false, true);
     go('product', {push:false});
     if(push!==false){
-      try{ history.pushState({view:'product',cat:cat,slug:slug}, '', withBase('/'+cat+'/'+slug)); }catch(e){}
+      try{ history.pushState({view:'product',cat:cat,slug:slug}, '', withBase(withLang('/'+cat+'/'+slug))); }catch(e){}
     }
     updateSEO('/'+cat+'/'+slug, list[idx]['name_'+lang]);
   };
@@ -615,7 +663,7 @@ function stepProductPage(dir){
   prodIndex=(prodIndex+dir+n)%n;
   const slug=list[prodIndex].slug;
   renderProductPage(true);
-  try{ history.pushState({view:'product',cat:activeCat,slug:slug}, '', withBase('/'+activeCat+'/'+slug)); }catch(e){}
+  try{ history.pushState({view:'product',cat:activeCat,slug:slug}, '', withBase(withLang('/'+activeCat+'/'+slug))); }catch(e){}
   updateSEO('/'+activeCat+'/'+slug, list[prodIndex]['name_'+lang]);
 }
 function closeProductPage(){
@@ -635,6 +683,7 @@ function escapeRegex(s){ return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
 function parseAndApplyRoute(path, push){
   path = (path||'/').replace(/\/+$/,'') || '/';
   path = stripBase(path);
+  path = stripLangPrefix(path);
   const catSlugs = SECTIONS.map(function(s){ return s.slug; });
   if(catSlugs.length){
     const prodRe = new RegExp('^/('+catSlugs.map(escapeRegex).join('|')+')/([a-z0-9-]+)$');
@@ -670,7 +719,7 @@ function renderBlog(){
 function openArticle(slug, push){
   currentArticle=slug; renderArticle(); go('article', {push:false});
   if(push!==false){
-    try{ history.pushState({view:'article',slug:slug}, '', withBase('/blog/'+slug)); }catch(e){}
+    try{ history.pushState({view:'article',slug:slug}, '', withBase(withLang('/blog/'+slug))); }catch(e){}
   }
   const p=BLOG.find(function(x){return x.slug===slug;});
   if(p) updateSEO('/blog/'+slug, p['title_'+lang]);
@@ -814,7 +863,7 @@ function renderFooterLocationsSkeleton(){
   renderPartners();
   startHeroRotation();
   initTheme();
-  document.getElementById('ka').classList.add('active');
+  document.getElementById(lang).classList.add('active');
   if(SECTIONS.length) activateCategory(activeCat, {scroll:false});
   const matched = parseAndApplyRoute(location.pathname, false);
   if(!matched){ go('home', {push:false}); }
