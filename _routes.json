@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "include": ["/*"],
+  "exclude": [
+    "/admin/*",
+    "/styles.css",
+    "/script.js",
+    "/robots.txt",
+    "/sitemap.xml",
+    "/llms.txt",
+    "/NewLogo.png",
+    "/NewLogo.webp",
+    "/eu-cofunded.webp",
+    "/espa-logo.webp",
+    "/favicon.ico"
+  ]
+}
