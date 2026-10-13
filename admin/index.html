@@ -124,15 +124,37 @@
         <div id="locationsList" class="cards-list"></div>
       </div>
 
-      <div class="card pages-card-spaced">
+      <div class="card pages-card-spaced" id="aboutPageCard">
         <h3 class="card-subhead">ჩვენს შესახებ</h3>
-        <div class="card-row">
-          <label class="field">სათაური (KA)<input id="apTitleKa"></label>
-          <label class="field">Title (EN)<input id="apTitleEn"></label>
+        <div class="editor-tabs">
+          <button type="button" class="editor-tab-btn active" data-editor-tab="ka">ქართული</button>
+          <button type="button" class="editor-tab-btn" data-editor-tab="en">English</button>
         </div>
-        <div class="card-row">
-          <label class="field">ტექსტი (KA)<textarea id="apBodyKa" rows="5"></textarea></label>
-          <label class="field">Body (EN)<textarea id="apBodyEn" rows="5"></textarea></label>
+        <div class="editor-pane active" data-lang="ka">
+          <label class="field">სათაური (KA)<input id="apTitleKa"></label>
+          <label class="field">ტექსტი (KA)</label>
+          <div id="apToolbarKa"></div>
+          <div id="apQuillKa"></div>
+          <details class="seo-section">
+            <summary>SEO</summary>
+            <label class="field">Meta Title<input id="apMetaTitleKa"></label>
+            <p class="seo-hint">რეკომენდებულია ~50-60 სიმბოლომდე, რომ Google-ის ძიების შედეგებში არ შეიკვეცოს.</p>
+            <label class="field">Meta Description<textarea id="apMetaDescKa" rows="3"></textarea></label>
+            <p class="char-counter" id="apMetaDescCountKa"></p>
+          </details>
+        </div>
+        <div class="editor-pane" data-lang="en">
+          <label class="field">Title (EN)<input id="apTitleEn"></label>
+          <label class="field">Body (EN)</label>
+          <div id="apToolbarEn"></div>
+          <div id="apQuillEn"></div>
+          <details class="seo-section">
+            <summary>SEO</summary>
+            <label class="field">Meta Title<input id="apMetaTitleEn"></label>
+            <p class="seo-hint">Recommended ~50-60 characters so it isn&rsquo;t truncated in Google search results.</p>
+            <label class="field">Meta Description<textarea id="apMetaDescEn" rows="3"></textarea></label>
+            <p class="char-counter" id="apMetaDescCountEn"></p>
+          </details>
         </div>
         <div class="card-actions"><button class="btn solid" id="saveAboutPageBtn">შენახვა</button></div>
         <p class="err" id="aboutPageSaved" hidden></p>

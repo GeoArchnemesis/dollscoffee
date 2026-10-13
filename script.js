@@ -74,10 +74,10 @@ function esc(str){
 
 const T = {
   ka:{home:'მთავარი',blog:'ბლოგი',contact:'კონტაქტი',about:'ჩვენს შესახებ',coffee:'ყავა',chocolate:'შოკოლადი',tea:'ჩაი',viewProduct:'პროდუქტის დეტალები',
-    blogEyebrow:'ჟურნალი',blogTitle:'ბლოგი',contactEyebrow:'დაგვიკავშირდი',contactTitle:'კონტაქტი',
-    aboutEyebrow:'გავიცანით ერთმანეთი',aboutTitle:'ჩვენს შესახებ',aboutLead:'',
+    blogTitle:'ბლოგი',contactEyebrow:'დაგვიკავშირდი',contactTitle:'კონტაქტი',
+    aboutTitle:'ჩვენს შესახებ',aboutLead:'',
     phone:'ტელეფონი',address:'მისამართი',addressVal:'საქართველო, თბილისი, ვასილ კოპცოვის 34ბ',partnerK:'პარტნიორი',
-    fName:'სახელი',fEmail:'ელ. ფოსტა',fMsg:'შეტყობინება',fSend:'გაგზავნა',sent:'მადლობა! შეტყობინება გაიგზავნა.',back:'უკან ბლოგზე',
+    fName:'სახელი',fEmail:'ელ. ფოსტა',fMsg:'შეტყობინება',fSend:'გაგზავნა',sent:'მადლობა! შეტყობინება გაიგზავნა.',back:'უკან',
     priv:'კონფიდენციალურობის პოლიტიკა',terms:'გამოყენების წესები',rights:'ყველა უფლება დაცულია',
     privTitle:'კონფიდენციალურობის პოლიტიკა',privLead:'',privP1:'',termsTitle:'გამოყენების წესები',termsLead:'',termsP1:'',viewFull:'სრული დოკუმენტის ნახვა',
     marqueeText:'· 100% არაბიკა · AVEK-ის ოფიციალური პარტნიორი, საბერძნეთი · ხელით შერჩეული ბლენდები ',
@@ -88,8 +88,8 @@ const T = {
     partnersEyebrow:'პარტნიორობა',partnersTitle:'პარტნიორი კომპანიები',
     heroPlaceholder:'ფოტო მალე დაემატება', emptyProducts:'მალე დაემატება ახალი პროდუქტები', emptyBlog:'ბლოგის პირველი პოსტი მალე გამოქვეყნდება'},
   en:{home:'Home',blog:'Blog',contact:'Contact',about:'About Us',coffee:'Coffee',chocolate:'Chocolate',tea:'Tea',viewProduct:'Product details',
-    blogEyebrow:'Journal',blogTitle:'The Blog',contactEyebrow:'Get in touch',contactTitle:'Contact',
-    aboutEyebrow:'Get to know us',aboutTitle:'About Us',aboutLead:'',
+    blogTitle:'The Blog',contactEyebrow:'Get in touch',contactTitle:'Contact',
+    aboutTitle:'About Us',aboutLead:'',
     phone:'Phone',address:'Address',addressVal:'34b Vasil Koptsovi St, Tbilisi, Georgia',partnerK:'Partner',
     fName:'Name',fEmail:'Email',fMsg:'Message',fSend:'Send message',sent:'Thank you! Your message was sent.',back:'Back to blog',
     priv:'Privacy Policy',terms:'Terms of use',rights:'All Rights Reserved',
@@ -149,7 +149,7 @@ function initTheme(){
 function updateSEO(pathAbs, titleSuffix){
   const base = "Doll's Coffee";
   document.title = titleSuffix ? (titleSuffix+' | '+base) : base+' — ყავა, შოკოლადი და ჩაი';
-  const full = 'https://www.dollscoffee.ge'+(pathAbs==='/'?'':pathAbs);
+  const full = 'https://dollscoffee.ge'+(pathAbs==='/'?'':pathAbs);
   const canon = document.querySelector('link[rel="canonical"]');
   if(canon) canon.setAttribute('href', full);
   const ogUrl = document.querySelector('meta[property="og:url"]');
@@ -408,7 +408,9 @@ function renderProdList(){
   }
   const eagerCount = getColumnCount()*2; // already-visible cards above the fold - never delay their LCP-candidate photo
   list.forEach((p,i)=>{
-    const card=document.createElement('button'); card.className='prod-card tap reveal'; card.style.transitionDelay=(Math.min(i,6)*20)+'ms'; card.onclick=()=>selectProduct(i);
+    const card=document.createElement('a'); card.className='prod-card tap reveal'; card.style.transitionDelay=(Math.min(i,6)*20)+'ms';
+    card.href=withBase('/'+activeCat+'/'+p.slug);
+    card.onclick=function(e){ e.preventDefault(); selectProduct(i); };
     const swatchStyle = p.photo_url ? "background-size:contain;background-repeat:no-repeat;background-position:center;" : '';
     const swatchClass = 'swatch'+(p.photo_url?'':' swatch-empty');
     card.innerHTML='<span class="'+swatchClass+'" style="'+swatchStyle+'"></span>'
@@ -654,7 +656,9 @@ function renderBlog(){
     return;
   }
   BLOG.forEach((p,i)=>{
-    const el=document.createElement('article');el.className='post reveal';el.style.transitionDelay=(i*35)+'ms';el.onclick=()=>openArticle(p.slug);
+    const el=document.createElement('a');el.className='post reveal';el.style.transitionDelay=(i*35)+'ms';
+    el.href=withBase('/blog/'+p.slug);
+    el.onclick=function(e){ e.preventDefault(); openArticle(p.slug); };
     const coverStyle = p.cover_photo_url ? "background-size:cover;background-position:center;" : '';
     const coverClass = 'cover'+(p.cover_photo_url ? '' : ' no-photo');
     el.innerHTML='<div class="'+coverClass+'" style="'+coverStyle+'"></div><div class="body"><div class="date">'+esc(formatBlogDate(p.published_at))+'</div><h3>'+esc(p['title_'+lang])+'</h3></div>';
@@ -763,7 +767,9 @@ function renderAboutPage(){
   const titleEl = document.getElementById('about-title');
   if(titleEl) titleEl.textContent = ABOUT['title_'+lang] || T[lang].aboutTitle;
   const bodyEl = document.getElementById('about-body');
-  if(bodyEl) bodyEl.textContent = ABOUT['body_'+lang] || '';
+  if(!bodyEl) return;
+  bodyEl.innerHTML = DOMPurify.sanitize(ABOUT['body_'+lang] || '');
+  bodyEl.querySelectorAll('img').forEach(function(img){ img.loading = 'lazy'; });
 }
 
 window.addEventListener('popstate', function(){
@@ -783,10 +789,16 @@ function renderProdListSkeleton(){
   }
   wrap.innerHTML = html;
 }
+/* matches the real rendered shape (2 locations - Tbilisi + Athens - the
+   first carrying the contact email too, see renderLocationsHTML()) as
+   closely as possible, so the footer doesn't visibly grow/shift once the
+   real data replaces this - see the CLS fix in SEOAUDIT.md item 9. */
 function renderFooterLocationsSkeleton(){
   const el = document.getElementById('footer-locations');
   if(!el) return;
-  el.innerHTML = '<div class="foot-block skeleton-block" aria-hidden="true"><h4>&nbsp;</h4><span class="foot-line">&nbsp;</span><span class="foot-line">&nbsp;</span></div>';
+  el.innerHTML =
+    '<div class="foot-block skeleton-block" aria-hidden="true"><h4>&nbsp;</h4><span class="foot-line">&nbsp;</span><span class="foot-line">&nbsp;</span><span class="foot-line">&nbsp;</span><span class="foot-line">&nbsp;</span></div>' +
+    '<div class="foot-block skeleton-block" aria-hidden="true"><h4>&nbsp;</h4><span class="foot-line">&nbsp;</span><span class="foot-line">&nbsp;</span></div>';
 }
 
 (async function init(){

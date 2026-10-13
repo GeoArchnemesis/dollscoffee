@@ -140,6 +140,18 @@ input,select,textarea{font:inherit;color:inherit}
 .editor-pane .ql-container{border-bottom-left-radius:8px;border-bottom-right-radius:8px;background:#fff;font-size:14px}
 .editor-pane .ql-toolbar{border-top-left-radius:8px;border-top-right-radius:8px;background:#fff}
 .editor-pane .ql-editor{min-height:180px}
+.editor-pane .field{margin-bottom:8px}
+
+/* ---------- SEO sub-section (collapsible, nested inside each language tab) ---------- */
+.seo-section{border-top:1px solid var(--line);margin-top:16px;padding-top:12px}
+.seo-section summary{cursor:pointer;font-weight:600;font-size:14px;color:var(--ink);list-style:none}
+.seo-section summary::-webkit-details-marker{display:none}
+.seo-section summary::before{content:'▸ ';color:var(--ink-soft)}
+.seo-section[open] summary::before{content:'▾ '}
+.seo-section .field{margin-top:12px}
+.seo-hint{font-size:12px;color:var(--ink-soft);margin:4px 0 0}
+.char-counter{font-size:12px;color:var(--ink-soft);text-align:right;margin:4px 0 0}
+.char-counter.over{color:var(--danger);font-weight:600}
 
 @media (max-width:640px){
   .card-row,.form-row{grid-template-columns:1fr}

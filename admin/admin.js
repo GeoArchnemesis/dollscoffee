@@ -16,14 +16,91 @@ function slugify(str){
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '');
 }
-function wireSlugAutoFill(nameInput, slugInput, alreadyTouched){
+/* generic "auto-fill target from source until the user edits target directly"
+   behavior - slug-from-name and meta-title-from-title both use this. */
+function wireAutoFillText(sourceInput, targetInput, alreadyTouched, transform){
+  const fn = transform || function(v){ return v; };
   const state = { touched: !!alreadyTouched };
-  slugInput.addEventListener('input', function(){ state.touched = true; });
-  nameInput.addEventListener('input', function(){
+  targetInput.addEventListener('input', function(){ state.touched = true; });
+  sourceInput.addEventListener('input', function(){
     if (state.touched) return;
-    slugInput.value = slugify(nameInput.value);
+    targetInput.value = fn(sourceInput.value);
   });
   return state;
+}
+function wireSlugAutoFill(nameInput, slugInput, alreadyTouched){
+  return wireAutoFillText(nameInput, slugInput, alreadyTouched, slugify);
+}
+/* remaining-characters counter for SEO meta description / alt text fields */
+function wireRemainingCounter(inputEl, counterEl, max){
+  function update(){
+    const remaining = max - inputEl.value.length;
+    counterEl.textContent = remaining >= 0
+      ? ('დარჩენილია ' + remaining + ' სიმბოლო')
+      : ('გადაცილებულია ' + Math.abs(remaining) + ' სიმბოლოთი');
+    counterEl.classList.toggle('over', remaining < 0);
+  }
+  inputEl.addEventListener('input', update);
+  update();
+}
+/* scoped KA/EN tab wiring - takes a root element so a static panel (About Us)
+   and a transient modal (blog post) with the same .editor-tab-btn markup
+   never cross-wire each other. */
+function wireLangTabs(rootEl){
+  const tabBtns = $all('.editor-tab-btn', rootEl);
+  const panes = $all('.editor-pane', rootEl);
+  tabBtns.forEach(function(btn){
+    btn.addEventListener('click', function(){
+      tabBtns.forEach(function(b){ b.classList.remove('active'); });
+      btn.classList.add('active');
+      panes.forEach(function(p){ p.classList.toggle('active', p.dataset.lang === btn.dataset.editorTab); });
+    });
+  });
+}
+function capitalize(s){ return s.charAt(0).toUpperCase() + s.slice(1); }
+/* collapsible per-language SEO sub-section markup, shared between the blog
+   post editor and the About Us editor. `prefix` namespaces the field ids
+   (e.g. "bp" -> bpMetaTitleKa), `lang` is "ka"/"en", `includeAlt` adds the
+   cover-image alt-text field (blog has a cover photo, About Us does not). */
+function seoSectionHtml(prefix, lang, includeAlt){
+  const Lang = capitalize(lang);
+  const metaTitleId = prefix + 'MetaTitle' + Lang;
+  const metaDescId = prefix + 'MetaDesc' + Lang;
+  const metaDescCountId = prefix + 'MetaDescCount' + Lang;
+  const altId = prefix + 'Alt' + Lang;
+  const altCountId = prefix + 'AltCount' + Lang;
+  const hint = lang === 'ka'
+    ? 'რეკომენდებულია ~50-60 სიმბოლომდე, რომ Google-ის ძიების შედეგებში არ შეიკვეცოს.'
+    : 'Recommended ~50-60 characters so it isn’t truncated in Google search results.';
+  return (
+    '<details class="seo-section">' +
+      '<summary>SEO</summary>' +
+      '<label class="field">Meta Title<input id="' + metaTitleId + '"></label>' +
+      '<p class="seo-hint">' + hint + '</p>' +
+      '<label class="field">Meta Description<textarea id="' + metaDescId + '" rows="3"></textarea></label>' +
+      '<p class="char-counter" id="' + metaDescCountId + '"></p>' +
+      (includeAlt ?
+        '<label class="field">Cover ფოტოს alt ტექსტი<input id="' + altId + '"></label>' +
+        '<p class="char-counter" id="' + altCountId + '"></p>'
+      : '') +
+    '</details>'
+  );
+}
+/* wires the meta-description (160) / alt-text (125) remaining-character
+   counters and the meta-title auto-fill (from that language's own title
+   field) for one language's SEO sub-section. */
+function wireSeoSection(prefix, lang, titleInput, includeAlt){
+  const Lang = capitalize(lang);
+  const metaTitleInput = $('#' + prefix + 'MetaTitle' + Lang);
+  const metaDescInput = $('#' + prefix + 'MetaDesc' + Lang);
+  const metaDescCount = $('#' + prefix + 'MetaDescCount' + Lang);
+  wireAutoFillText(titleInput, metaTitleInput, !!metaTitleInput.value, function(v){ return v; });
+  wireRemainingCounter(metaDescInput, metaDescCount, 160);
+  if (includeAlt) {
+    const altInput = $('#' + prefix + 'Alt' + Lang);
+    const altCount = $('#' + prefix + 'AltCount' + Lang);
+    wireRemainingCounter(altInput, altCount, 125);
+  }
 }
 function unitLabel(unit){
   if (unit === 'kg') return 'კგ';
@@ -53,6 +130,9 @@ let productsSortable = null;
 let newSectionSlugState = null;
 let quillKa = null;
 let quillEn = null;
+let aboutQuillKa = null;
+let aboutQuillEn = null;
+let aboutEditorsReady = false;
 
 /* ---------- auth ---------- */
 function showLogin(errorMsg){
@@ -762,6 +842,78 @@ function renderBlogList(){
     });
   });
 }
+/* ---------- rich text editor (Quill) - shared between blog posts and the About Us editor ---------- */
+const QL_UNDO_SVG = '<svg viewBox="0 0 18 18"><path class="ql-stroke" d="M3,9a6,6,0,1,1,1.76,4.24"></path><polyline class="ql-stroke" points="3 4 3 9 8 9"></polyline></svg>';
+const QL_REDO_SVG = '<svg viewBox="0 0 18 18"><path class="ql-stroke" d="M15,9A6,6,0,1,0,13.24,13.24"></path><polyline class="ql-stroke" points="15 4 15 9 10 9"></polyline></svg>';
+function richEditorToolbarInnerHtml(){
+  return (
+    '<span class="ql-formats"><select class="ql-header"><option value="1"></option><option value="2"></option><option value="3"></option><option selected></option></select></span>' +
+    '<span class="ql-formats"><button class="ql-bold"></button><button class="ql-italic"></button><button class="ql-underline"></button><button class="ql-strike"></button></span>' +
+    '<span class="ql-formats"><button class="ql-blockquote"></button><button class="ql-list" value="ordered"></button><button class="ql-list" value="bullet"></button></span>' +
+    '<span class="ql-formats"><select class="ql-align"><option selected></option><option value="center"></option><option value="right"></option></select></span>' +
+    '<span class="ql-formats"><button class="ql-link"></button><button class="ql-image"></button></span>' +
+    '<span class="ql-formats">' +
+      '<button type="button" class="ql-undo" title="დაბრუნება">' + QL_UNDO_SVG + '</button>' +
+      '<button type="button" class="ql-redo" title="გამეორება">' + QL_REDO_SVG + '</button>' +
+      '<button class="ql-clean"></button>' +
+    '</span>'
+  );
+}
+/* full standalone toolbar <div> (markup built fresh, e.g. inside a modal
+   that's recreated from scratch on every open - see blogLangPaneHtml). */
+function richEditorToolbarHtml(toolbarId){
+  return '<div id="' + toolbarId + '">' + richEditorToolbarInnerHtml() + '</div>';
+}
+/* loose match: digits (optionally with a leading +) with typical phone
+   punctuation (spaces/dashes/parens/dots) stripped out first. */
+function isPhoneNumberText(text){
+  const cleaned = String(text || '').replace(/[\s\-().]/g, '');
+  return /^\+?\d{7,15}$/.test(cleaned);
+}
+function attachQuillLinkHandler(quill){
+  const toolbar = quill.getModule('toolbar');
+  toolbar.addHandler('link', function(value){
+    if (!value) { quill.format('link', false); return; }
+    const range = quill.getSelection();
+    if (!range || range.length === 0) return;
+    const selectedText = quill.getText(range.index, range.length);
+    if (isPhoneNumberText(selectedText)) {
+      quill.format('link', 'tel:' + selectedText.replace(/[\s\-().]/g, ''));
+      return;
+    }
+    const input = prompt('შეიყვანეთ ლინკის მისამართი (URL):', 'https://');
+    if (!input) return;
+    const url = /^(https?:|mailto:|tel:)/i.test(input) ? input : 'https://' + input;
+    quill.format('link', url);
+  });
+}
+/* creates a Quill instance bound to a custom toolbar container (built by
+   richEditorToolbarHtml). 'undo'/'redo' aren't real Quill formats, so their
+   handlers must be registered via modules.toolbar.handlers *before*
+   construction - Quill's Toolbar module decides at construction time
+   (scanning the container once) whether a button gets a click listener at
+   all, and silently skips any button whose format isn't either a real
+   registered format (as 'link'/'image' already are) or already present in
+   that options.handlers map; addHandler() called afterward is too late for
+   a button that got skipped. 'link'/'image' don't have this problem, so
+   they're wired the normal post-construction way via addHandler(). */
+function createRichEditor(toolbarId, editorId){
+  const quill = new Quill('#' + editorId, {
+    theme: 'snow',
+    modules: {
+      toolbar: {
+        container: '#' + toolbarId,
+        handlers: {
+          undo: function(){ this.quill.history.undo(); },
+          redo: function(){ this.quill.history.redo(); }
+        }
+      }
+    }
+  });
+  attachQuillImageHandler(quill);
+  attachQuillLinkHandler(quill);
+  return quill;
+}
 function attachQuillImageHandler(quill){
   const toolbar = quill.getModule('toolbar');
   toolbar.addHandler('image', function(){
@@ -787,6 +939,19 @@ function closeBlogModal(){
   quillKa = null; quillEn = null;
   closeModal();
 }
+function blogLangPaneHtml(post, lang){
+  const Lang = capitalize(lang);
+  const titleLabel = lang === 'ka' ? 'სათაური (KA)' : 'Title (EN)';
+  return (
+    '<div class="editor-pane' + (lang === 'ka' ? ' active' : '') + '" data-lang="' + lang + '">' +
+      '<label class="field">' + titleLabel + '<input id="bpTitle' + Lang + '" value="' + esc(post && post['title_' + lang] || '') + '" required></label>' +
+      '<label class="field">' + (lang === 'ka' ? 'ტექსტი (KA)' : 'Body (EN)') + '</label>' +
+      richEditorToolbarHtml('bpToolbar' + Lang) +
+      '<div id="bpQuill' + Lang + '"></div>' +
+      seoSectionHtml('bp', lang, true) +
+    '</div>'
+  );
+}
 function openBlogModal(post){
   const isEdit = !!post;
   const todayStr = new Date().toISOString().slice(0, 10);
@@ -795,23 +960,19 @@ function openBlogModal(post){
       '<div class="modal modal-wide">' +
         '<h2>' + (isEdit ? 'პოსტის რედაქტირება' : 'ახალი პოსტი') + '</h2>' +
         '<form id="blogForm" novalidate>' +
+          '<label class="field">Slug ( ინგლისური სათაური ავტომატურად შეავსებს )<input id="bpSlug" value="' + esc(post && post.slug || '') + '" required></label>' +
           '<div class="form-row">' +
-            '<label>სათაური (KA)<input id="bpTitleKa" value="' + esc(post && post.title_ka || '') + '" required></label>' +
-            '<label>Title (EN)<input id="bpTitleEn" value="' + esc(post && post.title_en || '') + '" required></label>' +
-          '</div>' +
-          '<label>Slug<input id="bpSlug" value="' + esc(post && post.slug || '') + '" required></label>' +
-          '<div class="form-row">' +
-            '<label>გამოქვეყნების თარიღი<input type="date" id="bpPublishedAt" value="' + esc((post && post.published_at) || todayStr) + '"></label>' +
+            '<label class="field">გამოქვეყნების თარიღი<input type="date" id="bpPublishedAt" value="' + esc((post && post.published_at) || todayStr) + '"></label>' +
             '<label class="toggle modal-toggle-row"><input type="checkbox" id="bpPublished"' + (!post || post.is_published ? ' checked' : '') + '> გამოქვეყნებული</label>' +
           '</div>' +
-          '<label>Cover ფოტო (რეკომენდებული ~1200×630)<input type="file" id="bpCover" accept="image/jpeg,image/png,image/webp,.heic,.heif"></label>' +
+          '<label class="field">Cover ფოტო (რეკომენდებული ~1200×630)<input type="file" id="bpCover" accept="image/jpeg,image/png,image/webp,.heic,.heif"></label>' +
           (post && post.cover_photo_url ? '<img class="modal-preview" src="' + esc(post.cover_photo_url) + '">' : '') +
           '<div class="editor-tabs">' +
             '<button type="button" class="editor-tab-btn active" data-editor-tab="ka">ქართული</button>' +
             '<button type="button" class="editor-tab-btn" data-editor-tab="en">English</button>' +
           '</div>' +
-          '<div class="editor-pane active" id="editorPaneKa"><div id="quillKa"></div></div>' +
-          '<div class="editor-pane" id="editorPaneEn"><div id="quillEn"></div></div>' +
+          blogLangPaneHtml(post, 'ka') +
+          blogLangPaneHtml(post, 'en') +
           '<div class="modal-actions">' +
             '<button type="button" class="btn ghost" id="cancelBlogModal">გაუქმება</button>' +
             '<button type="submit" class="btn solid">შენახვა</button>' +
@@ -822,30 +983,24 @@ function openBlogModal(post){
     '</div>'
   );
 
-  const toolbarOptions = [
-    [{ header: [1, 2, 3, false] }],
-    ['bold', 'italic', 'underline'],
-    ['image'],
-    ['clean']
-  ];
-  quillKa = new Quill('#quillKa', { theme: 'snow', modules: { toolbar: toolbarOptions } });
-  quillEn = new Quill('#quillEn', { theme: 'snow', modules: { toolbar: toolbarOptions } });
+  quillKa = createRichEditor('bpToolbarKa', 'bpQuillKa');
+  quillEn = createRichEditor('bpToolbarEn', 'bpQuillEn');
   quillKa.root.innerHTML = DOMPurify.sanitize((post && post.body_ka) || '');
   quillEn.root.innerHTML = DOMPurify.sanitize((post && post.body_en) || '');
-  attachQuillImageHandler(quillKa);
-  attachQuillImageHandler(quillEn);
 
-  $all('.editor-tab-btn').forEach(function(btn){
-    btn.addEventListener('click', function(){
-      $all('.editor-tab-btn').forEach(function(b){ b.classList.remove('active'); });
-      btn.classList.add('active');
-      $('#editorPaneKa').classList.toggle('active', btn.dataset.editorTab === 'ka');
-      $('#editorPaneEn').classList.toggle('active', btn.dataset.editorTab === 'en');
-    });
-  });
-
+  wireLangTabs($('.modal', $('#modalRoot')));
   $('#cancelBlogModal').addEventListener('click', closeBlogModal);
   wireSlugAutoFill($('#bpTitleEn'), $('#bpSlug'), isEdit);
+  if (isEdit) {
+    $('#bpMetaTitleKa').value = post.meta_title_ka || '';
+    $('#bpMetaTitleEn').value = post.meta_title_en || '';
+    $('#bpMetaDescKa').value = post.meta_description_ka || '';
+    $('#bpMetaDescEn').value = post.meta_description_en || '';
+    $('#bpAltKa').value = post.cover_alt_ka || '';
+    $('#bpAltEn').value = post.cover_alt_en || '';
+  }
+  wireSeoSection('bp', 'ka', $('#bpTitleKa'), true);
+  wireSeoSection('bp', 'en', $('#bpTitleEn'), true);
 
   $('#blogForm').addEventListener('submit', async function(e){
     e.preventDefault();
@@ -861,6 +1016,12 @@ function openBlogModal(post){
     }
     const body_ka = DOMPurify.sanitize(quillKa.root.innerHTML);
     const body_en = DOMPurify.sanitize(quillEn.root.innerHTML);
+    const meta_title_ka = $('#bpMetaTitleKa').value.trim() || null;
+    const meta_title_en = $('#bpMetaTitleEn').value.trim() || null;
+    const meta_description_ka = $('#bpMetaDescKa').value.trim() || null;
+    const meta_description_en = $('#bpMetaDescEn').value.trim() || null;
+    const cover_alt_ka = $('#bpAltKa').value.trim() || null;
+    const cover_alt_en = $('#bpAltEn').value.trim() || null;
 
     const submitBtn = e.target.querySelector('button[type="submit"]');
     submitBtn.disabled = true;
@@ -872,7 +1033,10 @@ function openBlogModal(post){
         if (post && post.cover_photo_url) await deleteImage(post.cover_photo_url);
         cover_photo_url = newUrl;
       }
-      const payload = { title_ka, title_en, slug, published_at, is_published, cover_photo_url, body_ka, body_en };
+      const payload = {
+        title_ka, title_en, slug, published_at, is_published, cover_photo_url, body_ka, body_en,
+        meta_title_ka, meta_title_en, meta_description_ka, meta_description_en, cover_alt_ka, cover_alt_en
+      };
       let error;
       if (isEdit) {
         ({ error } = await sb.from('blog_posts').update(payload).eq('id', post.id));
@@ -1040,22 +1204,46 @@ function openLocationModal(location){
     }
   });
 }
+function initAboutEditors(){
+  if (aboutEditorsReady) return;
+  aboutEditorsReady = true;
+  /* unlike the blog modal (built fresh from a string each time, toolbar
+     buttons included), these toolbar containers are static placeholder
+     <div>s already in admin/index.html - fill them in before Quill binds
+     to them, or Quill finds no ql-* controls to wire. */
+  $('#apToolbarKa').innerHTML = richEditorToolbarInnerHtml();
+  $('#apToolbarEn').innerHTML = richEditorToolbarInnerHtml();
+  aboutQuillKa = createRichEditor('apToolbarKa', 'apQuillKa');
+  aboutQuillEn = createRichEditor('apToolbarEn', 'apQuillEn');
+  wireLangTabs($('#aboutPageCard'));
+}
 async function loadAboutPage(){
   const { data, error } = await sb.from('about_page').select('*').eq('id', 1).maybeSingle();
   if (error) { alert('ჩვენს-შესახებ გვერდის ჩატვირთვის შეცდომა: ' + error.message); return; }
   aboutPageData = data;
+  initAboutEditors();
   if (!aboutPageData) return;
   $('#apTitleKa').value = aboutPageData.title_ka || '';
   $('#apTitleEn').value = aboutPageData.title_en || '';
-  $('#apBodyKa').value = aboutPageData.body_ka || '';
-  $('#apBodyEn').value = aboutPageData.body_en || '';
+  aboutQuillKa.root.innerHTML = DOMPurify.sanitize(aboutPageData.body_ka || '');
+  aboutQuillEn.root.innerHTML = DOMPurify.sanitize(aboutPageData.body_en || '');
+  $('#apMetaTitleKa').value = aboutPageData.meta_title_ka || '';
+  $('#apMetaTitleEn').value = aboutPageData.meta_title_en || '';
+  $('#apMetaDescKa').value = aboutPageData.meta_description_ka || '';
+  $('#apMetaDescEn').value = aboutPageData.meta_description_en || '';
+  wireSeoSection('ap', 'ka', $('#apTitleKa'), false);
+  wireSeoSection('ap', 'en', $('#apTitleEn'), false);
 }
 async function saveAboutPage(){
   const payload = {
     title_ka: $('#apTitleKa').value.trim(),
     title_en: $('#apTitleEn').value.trim(),
-    body_ka: $('#apBodyKa').value,
-    body_en: $('#apBodyEn').value
+    body_ka: DOMPurify.sanitize(aboutQuillKa.root.innerHTML),
+    body_en: DOMPurify.sanitize(aboutQuillEn.root.innerHTML),
+    meta_title_ka: $('#apMetaTitleKa').value.trim() || null,
+    meta_title_en: $('#apMetaTitleEn').value.trim() || null,
+    meta_description_ka: $('#apMetaDescKa').value.trim() || null,
+    meta_description_en: $('#apMetaDescEn').value.trim() || null
   };
   const { error } = await sb.from('about_page').update(payload).eq('id', 1);
   const msgEl = $('#aboutPageSaved');
