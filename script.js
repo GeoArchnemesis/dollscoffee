@@ -374,7 +374,11 @@ function go(view, opts){
   if(push && PAGE_PATHS[view]!==undefined){
     try{ history.pushState({view:view}, '', withBase(withLang(PAGE_PATHS[view]))); }catch(e){}
   }
-  window.scrollTo({top:0});
+  /* deferred one frame: doIt() just toggled .show on 8 sections, which
+     dirties layout - calling scrollTo() synchronously right after forces
+     the browser to flush that layout immediately instead of batching it
+     naturally at the next paint (Lighthouse's "forced reflow" audit). */
+  requestAnimationFrame(function(){ window.scrollTo({top:0}); });
   if(PAGE_PATHS[view]!==undefined){
     const aboutTitle = (ABOUT && ABOUT['title_'+lang]) || T[lang].aboutTitle;
     const titleMap={home:null,blog:T[lang].blogTitle,about:aboutTitle,contact:T[lang].contactTitle,privacy:T[lang].privTitle,terms:T[lang].termsTitle};
