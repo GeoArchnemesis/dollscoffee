@@ -42,7 +42,6 @@
     <button class="tab-btn" data-tab="pages">გვერდები</button>
     <button class="tab-btn" data-tab="messages">შეტყობინებები</button>
     <button class="tab-btn" data-tab="partners">პარტნიორები</button>
-    <button class="tab-btn" data-tab="maintenance">მოვლა (დროებითი)</button>
   </nav>
 
   <main class="wrap">
@@ -165,18 +164,6 @@
     <section id="tab-messages" class="tab-panel" hidden>
       <div class="panel-head"><h2>შეტყობინებები</h2></div>
       <div id="messagesList" class="cards-list"></div>
-    </section>
-
-    <section id="tab-maintenance" class="tab-panel" hidden>
-      <div class="panel-head"><h2>სურათების Cache-Control განახლება (დროებითი ხელსაწყო)</h2></div>
-      <p class="hint">ერთჯერადი მოქმედება: ყველა უკვე ატვირთული სურათის (hero, პროდუქტები, ბლოგის ყდები, პარტნიორების ლოგოები) იგივე მისამართზე ხელახლა ატვირთვა, გრძელვადიანი Cache-Control თავსართით (1 წელი). ფაილები, რომლებსაც უკვე აქვთ ეს თავსართი, ავტომატურად გამოტოვებული იქნება. მუშაობს პატარა ჯგუფებად (3 ფაილი ერთდროულად) და აჩვენებს ყოველი ფაილის შედეგს ცალ-ცალკე, რომ საჭიროების შემთხვევაში გაჩერდეს.</p>
-      <label class="toggle" style="margin:10px 0"><input type="checkbox" id="migrationDryRun" checked> მხოლოდ გადახედვა — რეალურად არაფერი შეიცვლება</label>
-      <div class="card-actions">
-        <button class="btn solid" id="startMigrationBtn">დაწყება</button>
-        <button class="btn danger" id="stopMigrationBtn" disabled>გაჩერება</button>
-      </div>
-      <p id="migrationProgress" class="muted" style="margin-top:10px"></p>
-      <div id="migrationLog" class="migration-log"></div>
     </section>
   </main>
 </div>

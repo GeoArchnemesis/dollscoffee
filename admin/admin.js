@@ -303,94 +303,6 @@ async function deleteImage(url){
   await sb.storage.from('media').remove([path]);
 }
 
-/* ---------- TEMPORARY: one-time migration to fix cache-control on images
-   uploaded before uploadImage() started setting it (see seoplan.md's LCP
-   fix). Re-uploads each file's existing bytes to its own existing path with
-   a long cacheControl - the public URL never changes, so this needs zero
-   database writes, only Storage object updates. Delete this whole block
-   (plus the "maintenance" tab in admin/index.html and its CSS in
-   admin.css) once it's been run successfully in production. ---------- */
-const MIGRATION_LONG_CACHE = '31536000'; // 1 year, matches uploadImage()
-let migrationStopRequested = false;
-async function collectMigrationImagePaths(){
-  const [hero, products, blog, partners] = await Promise.all([
-    sb.from('hero_slides').select('id,photo_url'),
-    sb.from('products').select('id,photo_url'),
-    sb.from('blog_posts').select('id,cover_photo_url'),
-    sb.from('partners').select('id,logo_url')
-  ]);
-  const items = [];
-  (hero.data || []).forEach(function(r){ if (r.photo_url) items.push({ label: 'hero_slides/' + r.id, url: r.photo_url }); });
-  (products.data || []).forEach(function(r){ if (r.photo_url) items.push({ label: 'products/' + r.id, url: r.photo_url }); });
-  (blog.data || []).forEach(function(r){ if (r.cover_photo_url) items.push({ label: 'blog_posts/' + r.id, url: r.cover_photo_url }); });
-  (partners.data || []).forEach(function(r){ if (r.logo_url) items.push({ label: 'partners/' + r.id, url: r.logo_url }); });
-  return items;
-}
-function migrationLogLine(root, text, kind){
-  const p = document.createElement('p');
-  p.className = kind === 'err' ? 'err' : (kind === 'ok' ? 'err ok' : 'muted');
-  p.textContent = text;
-  root.appendChild(p);
-  root.scrollTop = root.scrollHeight;
-}
-async function migrateOneImage(item, logRoot, dryRun){
-  const path = storagePathFromUrl(item.url);
-  if (!path) { migrationLogLine(logRoot, '⚠️ ' + item.label + ' — ვერ ამოვიცანი storage გზა URL-დან, გამოტოვებულია'); return 'skipped'; }
-  try {
-    const headRes = await fetch(item.url, { method: 'HEAD', cache: 'no-store' });
-    const existingCacheControl = headRes.headers.get('cache-control') || '';
-    if (existingCacheControl.indexOf('max-age=' + MIGRATION_LONG_CACHE) !== -1) {
-      migrationLogLine(logRoot, '⏭️ ' + path + ' — უკვე აქვს გრძელვადიანი cache-control, გამოტოვებულია');
-      return 'skipped';
-    }
-    if (dryRun) {
-      migrationLogLine(logRoot, '👀 ' + path + ' — განახლდებოდა (ამჟამინდელი: "' + (existingCacheControl || 'ცარიელი') + '")');
-      return 'would-update';
-    }
-    const getRes = await fetch(item.url, { cache: 'no-store' });
-    if (!getRes.ok) throw new Error('ვერ ჩამოვტვირთე ფაილი (HTTP ' + getRes.status + ')');
-    const blob = await getRes.blob();
-    const contentType = getRes.headers.get('content-type') || blob.type || 'application/octet-stream';
-    const { error } = await sb.storage.from('media').update(path, blob, { contentType: contentType, upsert: true, cacheControl: MIGRATION_LONG_CACHE });
-    if (error) throw error;
-    migrationLogLine(logRoot, '✅ ' + path + ' — წარმატებით განახლდა', 'ok');
-    return 'done';
-  } catch (err) {
-    migrationLogLine(logRoot, '❌ ' + path + ' — შეცდომა: ' + friendlyError(err), 'err');
-    return 'error';
-  }
-}
-async function runImageCacheMigration(){
-  const startBtn = $('#startMigrationBtn'), stopBtn = $('#stopMigrationBtn');
-  const progressEl = $('#migrationProgress'), logRoot = $('#migrationLog');
-  const dryRun = $('#migrationDryRun').checked;
-  logRoot.innerHTML = '';
-  migrationStopRequested = false;
-  startBtn.disabled = true; stopBtn.disabled = false;
-  progressEl.textContent = 'ფაილების სიის მომზადება...';
-  const items = await collectMigrationImagePaths();
-  const BATCH_SIZE = 3;
-  let done = 0, okCount = 0, errCount = 0, skipCount = 0;
-  for (let i = 0; i < items.length; i += BATCH_SIZE) {
-    if (migrationStopRequested) {
-      progressEl.textContent = 'შეჩერებულია: ' + done + ' / ' + items.length + ' დამუშავებული (' + okCount + ' წარმატებული/გადასახედი, ' + errCount + ' შეცდომა, ' + skipCount + ' გამოტოვებული)';
-      startBtn.disabled = false; stopBtn.disabled = true;
-      return;
-    }
-    const batch = items.slice(i, i + BATCH_SIZE);
-    const results = await Promise.all(batch.map(function(item){ return migrateOneImage(item, logRoot, dryRun); }));
-    results.forEach(function(r){
-      done++;
-      if (r === 'done' || r === 'would-update') okCount++;
-      else if (r === 'error') errCount++;
-      else skipCount++;
-    });
-    progressEl.textContent = done + ' / ' + items.length + ' დამუშავებული (' + okCount + ' წარმატებული/გადასახედი, ' + errCount + ' შეცდომა, ' + skipCount + ' გამოტოვებული)';
-  }
-  progressEl.textContent += ' — დასრულდა.';
-  startBtn.disabled = false; stopBtn.disabled = true;
-}
-
 /* ---------- shared: reorder by dragging (full re-numbering) ---------- */
 async function persistOrder(table, ids){
   const results = await Promise.all(ids.map(function(id, i){
@@ -1437,7 +1349,5 @@ document.addEventListener('DOMContentLoaded', function(){
   $('#saveContactInfoBtn').addEventListener('click', saveContactInfo);
   $('#addLocationBtn').addEventListener('click', function(){ openLocationModal(null); });
   $('#saveAboutPageBtn').addEventListener('click', saveAboutPage);
-  $('#startMigrationBtn').addEventListener('click', runImageCacheMigration);
-  $('#stopMigrationBtn').addEventListener('click', function(){ migrationStopRequested = true; });
   checkAuth();
 });

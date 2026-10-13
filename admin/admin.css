@@ -153,10 +153,6 @@ input,select,textarea{font:inherit;color:inherit}
 .char-counter{font-size:12px;color:var(--ink-soft);text-align:right;margin:4px 0 0}
 .char-counter.over{color:var(--danger);font-weight:600}
 
-/* ---------- temporary: image cache-control migration log ---------- */
-.migration-log{max-height:320px;overflow-y:auto;border:1px solid var(--line);border-radius:8px;padding:10px;background:#fff}
-.migration-log p{margin:2px 0;font-size:13px;font-family:monospace}
-
 @media (max-width:640px){
   .card-row,.form-row{grid-template-columns:1fr}
   .topbar{padding:12px 16px}
