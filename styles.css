@@ -241,7 +241,11 @@ html[data-theme="dark"] .theme-toggle .sun{display:block}
 .article h1{font-size:clamp(30px,5vw,50px);overflow-wrap:anywhere}
 .article .date{color:var(--ink-soft);margin-top:12px;font-family:var(--sans)}
 .post .cover.no-photo,.article .cover.no-photo{background:repeating-linear-gradient(45deg,var(--line),var(--line) 10px,var(--cream-2) 10px,var(--cream-2) 20px)}
-.article-content{font-family:var(--sans);color:var(--ink);font-size:18px;line-height:1.7}
+/* white-space:pre-line keeps legacy plain-text content (pre-dating the Quill
+   editor, typed with blank lines between paragraphs, no real <p> tags)
+   readable - it has zero effect once content is real paragraph/list/etc.
+   HTML, since those already get their own block-level spacing below. */
+.article-content{font-family:var(--sans);color:var(--ink);font-size:18px;line-height:1.7;white-space:pre-line}
 .article-content p{margin:18px 0}
 .article-content h1,.article-content h2,.article-content h3{font-family:var(--serif);color:var(--ink);margin:28px 0 12px;line-height:1.2}
 .article-content h1{font-size:28px}

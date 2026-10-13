@@ -1204,6 +1204,23 @@ function openLocationModal(location){
     }
   });
 }
+/* About Us predates the Quill editor - its stored body_ka/body_en may still
+   be legacy plain text (typed in the old <textarea>, blank line between
+   paragraphs, no real HTML at all). Loading that directly into Quill only
+   *looks* right because Quill's own CSS preserves raw newlines - the public
+   site doesn't have that, so it rendered as one unbroken wall of text (see
+   seoplan.md-adjacent bugfix). Converting it to real <p> tags on load means
+   the next Save persists proper HTML and this stops being needed for that
+   row; it's a no-op once content already has block-level tags. */
+function textToParagraphsHtml(text){
+  text = String(text || '');
+  if (/<(p|div|h[1-6]|ul|ol|blockquote)[\s>]/i.test(text)) return text;
+  return text.split(/\n\s*\n/)
+    .map(function(para){ return para.trim(); })
+    .filter(function(para){ return para.length; })
+    .map(function(para){ return '<p>' + esc(para.replace(/\n+/g, ' ')) + '</p>'; })
+    .join('');
+}
 function initAboutEditors(){
   if (aboutEditorsReady) return;
   aboutEditorsReady = true;
@@ -1225,8 +1242,8 @@ async function loadAboutPage(){
   if (!aboutPageData) return;
   $('#apTitleKa').value = aboutPageData.title_ka || '';
   $('#apTitleEn').value = aboutPageData.title_en || '';
-  aboutQuillKa.root.innerHTML = DOMPurify.sanitize(aboutPageData.body_ka || '');
-  aboutQuillEn.root.innerHTML = DOMPurify.sanitize(aboutPageData.body_en || '');
+  aboutQuillKa.root.innerHTML = DOMPurify.sanitize(textToParagraphsHtml(aboutPageData.body_ka || ''));
+  aboutQuillEn.root.innerHTML = DOMPurify.sanitize(textToParagraphsHtml(aboutPageData.body_en || ''));
   $('#apMetaTitleKa').value = aboutPageData.meta_title_ka || '';
   $('#apMetaTitleEn').value = aboutPageData.meta_title_en || '';
   $('#apMetaDescKa').value = aboutPageData.meta_description_ka || '';
