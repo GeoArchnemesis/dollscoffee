@@ -188,14 +188,15 @@ const ALWAYS_DEMOTE_H1 = [
 async function loadRouteData(route, env, request){
   const { type } = route;
   if (type === 'home') {
-    const [sections, products] = await Promise.all([
+    const [sections, products, hero] = await Promise.all([
       sbFetch('sections?select=*&is_visible=eq.true&order=sort_order'),
-      sbFetch('products?select=*&is_visible=eq.true&order=sort_order')
+      sbFetch('products?select=*&is_visible=eq.true&order=sort_order'),
+      sbFetch('hero_slides?select=photo_url&is_active=eq.true&order=sort_order&limit=1')
     ]);
     if (!sections.length) return null;
     const first = sections[0];
     const products_in_cat = products.filter(function(p){ return p.section_id === first.id; });
-    return { sections, categorySlug: first.slug, products: products_in_cat };
+    return { sections, categorySlug: first.slug, products: products_in_cat, heroImage: (hero[0] && hero[0].photo_url) || null };
   }
   if (type === 'blogList') {
     return { posts: await sbFetch('blog_posts?select=*&is_published=eq.true&order=published_at.desc') };
@@ -237,6 +238,7 @@ function buildMeta(route, data){
 
   if (type === 'home') {
     // keep the static shell's own homepage <title>/description untouched - no column backs these
+    ogImage = data.heroImage || null;
   } else if (type === 'blogList') {
     title = STR[lang].blogTitle + ' | ' + base;
   } else if (type === 'post') {
@@ -272,6 +274,22 @@ function buildRewriter(route, data, meta){
   if (meta.title) rw = rw.on('meta[property="og:title"]', { element(el){ el.setAttribute('content', meta.title); } });
   rw = rw.on('meta[property="og:url"]', { element(el){ el.setAttribute('content', meta.selfUrl); } });
   rw = rw.on('link[rel="canonical"]', { element(el){ el.setAttribute('href', meta.selfUrl); } });
+  if (type === 'home' && data.heroImage) {
+    /* the hero slider's image is set via JS (style.backgroundImage) after
+       fetchSiteData()'s Supabase round-trip completes, so the browser's
+       preload scanner - which only looks at raw HTML, before any JS runs -
+       could never discover it, and had to wait for that whole round-trip
+       before even starting the image download. This is the dominant LCP
+       cost (confirmed: ~8.4s LCP, "LCP request discovery" Lighthouse audit).
+       Preloading it here means the image is already downloading in
+       parallel with script.js loading/running, so by the time JS sets the
+       background-image style, the browser serves it from cache instantly.
+       prepend (not append) - this needs to be as early in <head> as
+       possible for the preload scanner to find it fastest. */
+    rw = rw.on('head', { element(el){
+      el.prepend('<link rel="preload" as="image" fetchpriority="high" href="' + esc(data.heroImage) + '">', { html: true });
+    } });
+  }
   rw = rw.on('head', { element(el){
     let extra = '<script>window.INITIAL_LANG=' + JSON.stringify(lang) + ';</script>'
       + '<link rel="alternate" hreflang="ka" href="' + esc(meta.kaUrl) + '">'

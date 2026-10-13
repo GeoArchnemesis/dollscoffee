@@ -283,7 +283,11 @@ async function uploadImage(file, folder, maxW, maxH, targetBytes){
   const ext = isWebp ? 'webp' : 'png';
   const contentType = isWebp ? 'image/webp' : 'image/png';
   const path = folder + '/' + crypto.randomUUID() + '.' + ext;
-  const { error } = await sb.storage.from('media').upload(path, blob, { contentType: contentType, upsert: false });
+  // every path is a fresh random UUID (upsert: false, never overwritten) -
+  // content-addressed in effect, so a long cache lifetime is safe; this is
+  // the Cache-Control: max-age the browser/CDN will serve it with (Lighthouse
+  // flagged the previous 1h default as leaving savings on repeat visits).
+  const { error } = await sb.storage.from('media').upload(path, blob, { contentType: contentType, upsert: false, cacheControl: '31536000' });
   if (error) throw error;
   const { data } = sb.storage.from('media').getPublicUrl(path);
   return data.publicUrl;
