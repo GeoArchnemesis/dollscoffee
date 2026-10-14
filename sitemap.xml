@@ -11,6 +11,36 @@
     <priority>1.0</priority>
   </url>
   <url>
+    <loc>https://dollscoffee.ge/coffee</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://dollscoffee.ge/en/coffee</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://dollscoffee.ge/chocolate</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://dollscoffee.ge/en/chocolate</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://dollscoffee.ge/tea</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://dollscoffee.ge/en/tea</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>https://dollscoffee.ge/blog</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
