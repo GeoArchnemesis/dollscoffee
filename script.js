@@ -140,6 +140,12 @@ function stripLangPrefix(path){
 
 let lang=INITIAL_LANG, activeCat='coffee', prodIndex=0, currentView='home', currentArticle=null;
 let lastCat='coffee', lastIndex=0;
+/* true when the 'home' view's real current location is a dedicated category
+   route (/coffee, /tea, /chocolate), not the true '/' root - both show the
+   same home view/shell with a tab active, so currentView alone can't tell
+   them apart. Consulted by currentPathAndTitle() so the language toggle
+   (setLang()) keeps the category in the URL instead of collapsing to '/'. */
+let homeIsCategoryRoute = false;
 
 /* ---------- theme ---------- */
 function applyTheme(t){
@@ -323,6 +329,10 @@ function toggleLang(){ setLang(lang==='ka' ? 'en' : 'ka'); }
    - without this, hreflang would be correct on first load but "lost" the
    moment someone used the GE/EN toggle instead of clicking a nav link. */
 function currentPathAndTitle(){
+  if(currentView==='home' && homeIsCategoryRoute){
+    const s = SECTIONS.find(function(x){ return x.slug===activeCat; });
+    return { path: '/'+activeCat, title: s ? s['name_'+lang] : null };
+  }
   if(currentView==='product'){
     const list = PRODUCTS[activeCat]||[];
     const p = list[prodIndex];
@@ -346,6 +356,11 @@ function setLang(l){
   renderCategoryButtons();
   renderText();
   renderProdList();
+  const catTitleEl = document.getElementById('cat-title');
+  if(catTitleEl){
+    const s = SECTIONS.find(function(x){ return x.slug===activeCat; });
+    if(s) catTitleEl.textContent = s['name_'+lang];
+  }
   if(!document.getElementById('detail').classList.contains('hidden')) renderDetail(true);
   if(currentView==='product') renderProductPage(true);
   renderBlog(); renderArticle();
@@ -362,6 +377,7 @@ const PAGE_PATHS={home:'/',blog:'/blog',about:'/about',contact:'/contact',privac
 function go(view, opts){
   opts = opts || {};
   const push = opts.push!==false;
+  if(view==='home') homeIsCategoryRoute=false; // plain home navigation - category flows re-set this true right after calling go('home',...)
   const doIt=function(){
     currentView=view;
     ['home','blog','about','contact','article','privacy','terms','product'].forEach(v=>document.getElementById('page-'+v).classList.toggle('show',v===view));
@@ -426,7 +442,7 @@ function renderCategoryButtons(){
   if(!wrap) return;
   wrap.innerHTML = SECTIONS.map(function(s){
     const cls = 'cat-btn tap reveal c-'+s.slug+(s.slug===activeCat?' active':'');
-    return '<button class="'+cls+'" data-cat="'+s.slug+'" onclick="activateCategory(\''+s.slug+'\',{scroll:false})">'+esc(s['name_'+lang])+'</button>';
+    return '<a class="'+cls+'" href="'+withBase(withLang('/'+s.slug))+'" data-cat="'+s.slug+'" onclick="event.preventDefault();activateCategory(\''+s.slug+'\',{scroll:false})">'+esc(s['name_'+lang])+'</a>';
   }).join('');
   Array.prototype.forEach.call(wrap.querySelectorAll('.cat-btn'), function(el,i){ el.style.transitionDelay=(i*70)+'ms'; });
   observeReveal(wrap);
@@ -435,6 +451,14 @@ function activateCategory(cat, opts){
   opts = opts || {};
   activeCat=cat; setAccent(cat);
   document.querySelectorAll('.cat-btn').forEach(b=>b.classList.toggle('active',b.dataset.cat===cat));
+  const s = SECTIONS.find(function(x){ return x.slug===cat; });
+  const titleEl = document.getElementById('cat-title');
+  if(titleEl && s) titleEl.textContent = s['name_'+lang];
+  if(opts.push !== false){
+    homeIsCategoryRoute = true;
+    try{ history.pushState({view:'home',cat:cat}, '', withBase(withLang('/'+cat))); }catch(e){}
+    if(s) updateSEO('/'+cat, s['name_'+lang]);
+  }
   renderProdList();
   prodIndex=0;
   const detailEl = document.getElementById('detail');
@@ -671,7 +695,7 @@ function stepProductPage(dir){
   updateSEO('/'+activeCat+'/'+slug, list[prodIndex]['name_'+lang]);
 }
 function closeProductPage(){
-  activateCategory(lastCat||'coffee', {scroll:false});
+  activateCategory(lastCat||'coffee', {scroll:false, push:false}); // go('home') below already sets the real URL/SEO for this transition
   prodIndex=lastIndex||0;
   insertDetailAfterRow(prodIndex);
   document.getElementById('detail').classList.remove('hidden');
@@ -696,6 +720,18 @@ function parseAndApplyRoute(path, push){
   }
   const blogMatch = path.match(/^\/blog\/([a-z0-9-]+)$/);
   if(blogMatch && BLOG.some(function(p){return p.slug===blogMatch[1];})){ openArticle(blogMatch[1], false); return true; }
+  if(catSlugs.length){
+    const catOnlyRe = new RegExp('^/('+catSlugs.map(escapeRegex).join('|')+')$');
+    const catOnlyMatch = path.match(catOnlyRe);
+    if(catOnlyMatch){
+      activateCategory(catOnlyMatch[1], {scroll:false, push:false});
+      go('home', {push:false});
+      homeIsCategoryRoute = true; // go('home',...) above resets this false - this is the real current route, so set it back true
+      const s = SECTIONS.find(function(x){ return x.slug===catOnlyMatch[1]; });
+      if(s) updateSEO('/'+catOnlyMatch[1], s['name_'+lang]);
+      return true;
+    }
+  }
   const map={'':'home','/':'home','/blog':'blog','/about':'about','/contact':'contact','/privacy':'privacy','/terms':'terms'};
   const view = map[path];
   if(view){ go(view, {push:push!==false}); return true; }
@@ -868,7 +904,7 @@ function renderFooterLocationsSkeleton(){
   startHeroRotation();
   initTheme();
   document.getElementById(lang).classList.add('active');
-  if(SECTIONS.length) activateCategory(activeCat, {scroll:false});
+  if(SECTIONS.length) activateCategory(activeCat, {scroll:false, push:false}); // just populates the default grid - parseAndApplyRoute below sets the real URL/SEO for whatever route this actually is
   const matched = parseAndApplyRoute(location.pathname, false);
   if(!matched){ go('home', {push:false}); }
   renderText(); renderBlog();

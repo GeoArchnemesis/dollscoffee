@@ -87,7 +87,16 @@ function matchRoute(pathname){
   if (m) return { type: 'post', lang, slug: m[1] };
   m = path.match(/^\/([a-z0-9-]+)\/([a-z0-9-]+)$/);
   if (m) return { type: 'product', lang, category: m[1], slug: m[2] };
-  return null; // includes /privacy, /terms (deliberately out of scope - see seoplan.md) and anything else
+  // single-segment path - a candidate category route (e.g. /coffee). /privacy
+  // and /terms are explicitly out of scope (see seoplan.md) and excluded here
+  // so they fall straight through to null/static pass-through with zero extra
+  // Supabase cost, rather than a wasted lookup that would return null anyway.
+  if (path !== '/privacy' && path !== '/terms') {
+    m = path.match(/^\/([a-z0-9-]+)$/);
+    if (m) return { type: 'category', lang, category: m[1] };
+  }
+  return null; // anything else (unknown slug/category is validated, and
+  // falls back to null, inside loadRouteData - same lenient pattern as 'product')
 }
 /* the ka (unprefixed) path for a matched route - used to build both the ka and en URL variants */
 function kaPathFor(route){
@@ -98,6 +107,7 @@ function kaPathFor(route){
     case 'contact': return '/contact';
     case 'post': return '/blog/' + route.slug;
     case 'product': return '/' + route.category + '/' + route.slug;
+    case 'category': return '/' + route.category;
   }
 }
 function urlFor(path, lang){
@@ -172,7 +182,8 @@ const H1_SELECTORS = {
   blogList: 'h1[data-t="blogTitle"]',
   about: '#about-title',
   contact: 'h1[data-t="contactTitle"]',
-  product: '#pf-name'
+  product: '#pf-name',
+  category: '#cat-title'
 };
 /* these three h1s never belong to any matched route at all (privacy/terms
    are out of scope entirely - see seoplan.md; partners is a shared section
@@ -196,7 +207,7 @@ async function loadRouteData(route, env, request){
     if (!sections.length) return null;
     const first = sections[0];
     const products_in_cat = products.filter(function(p){ return p.section_id === first.id; });
-    return { sections, categorySlug: first.slug, products: products_in_cat, heroImage: (hero[0] && hero[0].photo_url) || null };
+    return { sections, section: first, categorySlug: first.slug, products: products_in_cat, heroImage: (hero[0] && hero[0].photo_url) || null };
   }
   if (type === 'blogList') {
     return { posts: await sbFetch('blog_posts?select=*&is_published=eq.true&order=published_at.desc') };
@@ -223,6 +234,16 @@ async function loadRouteData(route, env, request){
     const products = await sbFetch('products?select=*&is_visible=eq.true&section_id=eq.' + sections[0].id + '&slug=eq.' + encodeURIComponent(route.slug));
     if (!products.length) return null;
     return { section: sections[0], product: products[0] };
+  }
+  if (type === 'category') {
+    const sections = await sbFetch('sections?select=*&is_visible=eq.true&slug=eq.' + encodeURIComponent(route.category));
+    if (!sections.length) return null; // unknown slug (or a non-category single-segment path like a bot probe) - lenient fallback, same as 'product'
+    const section = sections[0];
+    const [products, hero] = await Promise.all([
+      sbFetch('products?select=*&is_visible=eq.true&section_id=eq.' + section.id + '&order=sort_order'),
+      sbFetch('hero_slides?select=photo_url&is_active=eq.true&order=sort_order&limit=1')
+    ]);
+    return { section, categorySlug: section.slug, products, heroImage: (hero[0] && hero[0].photo_url) || null };
   }
   return null;
 }
@@ -257,6 +278,15 @@ function buildMeta(route, data){
     title = p['name_' + lang] + ' | ' + base;
     description = truncate(p['description_' + lang], 160) || null;
     ogImage = p.photo_url || null;
+  } else if (type === 'category') {
+    const s = data.section;
+    title = s['name_' + lang] + ' | ' + base;
+    // generated, not a DB field - sections has no description column today;
+    // see seoplan.md if/when real per-category copy is added later.
+    description = lang === 'ka'
+      ? truncate(s.name_ka + ' — მაღალხარისხიანი არჩევანი Doll\'s Coffee-სგან, AVEK-ის ოფიციალური პარტნიორი საქართველოში.', 160)
+      : truncate(s.name_en + ' — a premium selection from Doll\'s Coffee, official AVEK partner in Georgia.', 160);
+    ogImage = data.heroImage || null;
   }
   return { title, description, ogImage, selfUrl, kaUrl, enUrl };
 }
@@ -274,7 +304,7 @@ function buildRewriter(route, data, meta){
   if (meta.title) rw = rw.on('meta[property="og:title"]', { element(el){ el.setAttribute('content', meta.title); } });
   rw = rw.on('meta[property="og:url"]', { element(el){ el.setAttribute('content', meta.selfUrl); } });
   rw = rw.on('link[rel="canonical"]', { element(el){ el.setAttribute('href', meta.selfUrl); } });
-  if (type === 'home' && data.heroImage) {
+  if ((type === 'home' || type === 'category') && data.heroImage) {
     /* the hero slider's image is set via JS (style.backgroundImage) after
        fetchSiteData()'s Supabase round-trip completes, so the browser's
        preload scanner - which only looks at raw HTML, before any JS runs -
@@ -309,7 +339,7 @@ function buildRewriter(route, data, meta){
     rw = rw.on(H1_SELECTORS[key], { element(el){ el.tagName = 'h2'; } });
   });
 
-  if (type === 'home') {
+  if (type === 'home' || type === 'category') {
     if (data.heroImage) {
       /* the preload link alone only gets the image BYTES ready early - the
          browser still won't PAINT it until something actually applies it
@@ -323,10 +353,15 @@ function buildRewriter(route, data, meta){
          at all. renderHero() unconditionally overwrites #heroSlides once
          fetchSiteData() resolves, so this is purely a first-paint value -
          seamlessly replaced moments later by the identical client render,
-         not a lasting fork of this markup. */
+         not a lasting fork of this markup. Shared by 'home' and 'category'
+         since the hero slider itself is sitewide, not category-specific. */
       const heroHtml = "<div class=\"hero-slide active\" style=\"background-image:url('" + data.heroImage + "');background-size:cover;background-position:center;\"></div>";
       rw = rw.on('#heroSlides', { element(el){ el.setInnerContent(heroHtml, { html: true }); } });
     }
+    // shown for 'home' too (default/first category's name - whichever tab is
+    // effectively active), not just dedicated 'category' routes - keeps the
+    // heading's SSR output consistent with the client's always-visible behavior
+    rw = rw.on('#cat-title', { element(el){ el.setInnerContent(esc(data.section['name_' + lang])); } });
     if (data.products.length) {
       const html = data.products.map(function(p){ return productCardHtml(p, lang, data.categorySlug); }).join('');
       rw = rw.on('#prod-list', { element(el){ el.setInnerContent(html, { html: true }); } });
