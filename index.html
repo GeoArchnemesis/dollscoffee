@@ -45,9 +45,9 @@
 <a href="#main-content" class="skip-link" onclick="skipToMain(event)">გამოტოვე ნავიგაცია და გადადი კონტენტზე</a>
 <header>
   <div class="wrap nav">
-    <a class="brand tap" href="/" onclick="event.preventDefault();go('home')"><img data-base-src="/NewLogo.webp" alt="Doll's Coffee" class="brand-logo" width="704" height="188"></a>
+    <a class="brand tap" href="/" onclick="event.preventDefault();go('home',{resetCategory:true})"><img data-base-src="/NewLogo.webp" alt="Doll's Coffee" class="brand-logo" width="704" height="188"></a>
     <nav class="menu" id="menu">
-      <a data-nav="home" href="/" onclick="event.preventDefault();go('home')"></a>
+      <a data-nav="home" href="/" onclick="event.preventDefault();go('home',{resetCategory:true})"></a>
       <a data-nav="blog" href="/blog" onclick="event.preventDefault();go('blog')"></a>
       <a data-nav="about" href="/about" onclick="event.preventDefault();go('about')"></a>
       <a data-nav="contact" href="/contact" onclick="event.preventDefault();go('contact')"></a>
@@ -173,7 +173,7 @@
   <div class="wrap foot-grid">
     <div class="foot-block">
       <div class="foot-nav-btns">
-        <a class="foot-nav-btn tap" data-nav="home" href="/" onclick="event.preventDefault();go('home')"></a>
+        <a class="foot-nav-btn tap" data-nav="home" href="/" onclick="event.preventDefault();go('home',{resetCategory:true})"></a>
         <a class="foot-nav-btn tap" data-nav="blog" href="/blog" onclick="event.preventDefault();go('blog')"></a>
         <a class="foot-nav-btn tap" data-nav="about" href="/about" onclick="event.preventDefault();go('about')"></a>
         <a class="foot-nav-btn tap" data-nav="contact" href="/contact" onclick="event.preventDefault();go('contact')"></a>

@@ -374,10 +374,22 @@ function renderText(){
   document.querySelectorAll('[data-nav]').forEach(a=>{a.textContent=T[lang][a.dataset.nav];a.classList.toggle('active',a.dataset.nav===currentView);});
 }
 const PAGE_PATHS={home:'/',blog:'/blog',about:'/about',contact:'/contact',privacy:'/privacy',terms:'/terms'};
+function defaultCategorySlug(){ return (SECTIONS[0] && SECTIONS[0].slug) || 'coffee'; }
 function go(view, opts){
   opts = opts || {};
   const push = opts.push!==false;
-  if(view==='home') homeIsCategoryRoute=false; // plain home navigation - category flows re-set this true right after calling go('home',...)
+  if(view==='home'){
+    homeIsCategoryRoute=false; // plain home navigation - category flows re-set this true right after calling go('home',...)
+    if(opts.resetCategory){
+      // arriving at '/' via nav-link/popstate/router-fallback (not a fresh
+      // page load, not a category-specific flow) never otherwise resets the
+      // tab/heading/grid state left over from whatever category was last
+      // active - confirmed live: clicking the logo from /tea left the tab,
+      // heading and product grid all showing "tea" despite the URL
+      // correctly becoming '/'.
+      activateCategory(defaultCategorySlug(), {scroll:false, push:false});
+    }
+  }
   const doIt=function(){
     currentView=view;
     ['home','blog','about','contact','article','privacy','terms','product'].forEach(v=>document.getElementById('page-'+v).classList.toggle('show',v===view));
@@ -455,9 +467,14 @@ function activateCategory(cat, opts){
   const titleEl = document.getElementById('cat-title');
   if(titleEl && s) titleEl.textContent = s['name_'+lang];
   if(opts.push !== false){
-    homeIsCategoryRoute = true;
-    try{ history.pushState({view:'home',cat:cat}, '', withBase(withLang('/'+cat))); }catch(e){}
-    if(s) updateSEO('/'+cat, s['name_'+lang]);
+    // the default category's "real" URL is '/' itself, not '/'+cat - keeps
+    // '/' as the one canonical home position (never redirected to
+    // /<defaultCat>), and keeps back/forward history sensible.
+    const isDefault = cat === defaultCategorySlug();
+    const path = isDefault ? '/' : '/'+cat;
+    homeIsCategoryRoute = !isDefault;
+    try{ history.pushState({view:'home',cat:cat}, '', withBase(withLang(path))); }catch(e){}
+    updateSEO(path, isDefault ? null : (s && s['name_'+lang]));
   }
   renderProdList();
   prodIndex=0;
@@ -734,7 +751,7 @@ function parseAndApplyRoute(path, push){
   }
   const map={'':'home','/':'home','/blog':'blog','/about':'about','/contact':'contact','/privacy':'privacy','/terms':'terms'};
   const view = map[path];
-  if(view){ go(view, {push:push!==false}); return true; }
+  if(view){ go(view, {push:push!==false, resetCategory:true}); return true; }
   return false;
 }
 
@@ -906,7 +923,7 @@ function renderFooterLocationsSkeleton(){
   document.getElementById(lang).classList.add('active');
   if(SECTIONS.length) activateCategory(activeCat, {scroll:false, push:false}); // just populates the default grid - parseAndApplyRoute below sets the real URL/SEO for whatever route this actually is
   const matched = parseAndApplyRoute(location.pathname, false);
-  if(!matched){ go('home', {push:false}); }
+  if(!matched){ go('home', {push:false, resetCategory:true}); }
   renderText(); renderBlog();
   renderContactInfo(); renderContactLocations(); renderAboutPage();
   attachSwipe(document.getElementById('detail-media'), function(){stepProduct(1);}, function(){stepProduct(-1);});
