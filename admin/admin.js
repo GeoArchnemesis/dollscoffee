@@ -117,6 +117,8 @@ function friendlyError(err){
 let sections = [];
 let products = [];
 let heroSlides = [];
+let heroDrafts = [];
+let heroPendingMobile = {};
 let partners = [];
 let blogPosts = [];
 let contactInfo = null;
@@ -358,54 +360,215 @@ async function loadProducts(){
 }
 
 /* ---------- hero ---------- */
+function findHeroSlide(id){
+  return heroSlides.find(function(s){ return s.id === id; }) || heroDrafts.find(function(s){ return s.id === id; });
+}
+function heroMobileBlockHTML(photoUrlMobile){
+  return photoUrlMobile
+    ? '<img src="' + esc(photoUrlMobile) + '" alt="" class="mobile-thumb">' +
+      '<button class="icon-btn" data-act="remove-mobile" title="მობილურის ფოტოს წაშლა">×</button>'
+    : '<label class="btn small upload-btn">+ მობილური (1:1)' +
+        '<input type="file" class="f-mobile-file" accept="image/jpeg,image/png,image/webp,.heic,.heif" hidden>' +
+      '</label>';
+}
+function heroCardHTML(s){
+  const mobileUrl = Object.prototype.hasOwnProperty.call(heroPendingMobile, s.id) ? heroPendingMobile[s.id] : s.photo_url_mobile;
+  return (
+    '<div class="hero-card" data-id="' + s.id + '">' +
+      '<img src="' + esc(s.photo_url) + '" alt="">' +
+      '<div class="hero-card-mobile">' + heroMobileBlockHTML(mobileUrl) + '</div>' +
+      '<div class="hero-card-alt">' +
+        '<input type="text" class="f-alt-ka" placeholder="ალტ ტექსტი (ქართული)" value="' + esc(s.alt_ka || '') + '">' +
+        '<input type="text" class="f-alt-en" placeholder="Alt text (English)" value="' + esc(s.alt_en || '') + '">' +
+      '</div>' +
+      '<div class="hero-card-link">' +
+        '<input type="url" class="f-link" placeholder="ლინკი (არასავალდებულო) — მაგ. https://..." value="' + esc(s.link_url || '') + '">' +
+      '</div>' +
+      '<div class="hero-card-actions">' +
+        (s._isDraft ? '' : '<span class="drag-handle" title="გადათრევით დალაგება">⠿</span>') +
+        '<label class="toggle"><input type="checkbox" class="f-active"' + (s.is_active ? ' checked' : '') + '> აქტიური</label>' +
+        '<button class="btn small" data-act="save">შენახვა</button>' +
+        '<button class="btn small danger" data-act="delete">წაშლა</button>' +
+      '</div>' +
+    '</div>'
+  );
+}
+function heroSavedMsg(){ return $('#heroSaved'); }
+function showHeroSaved(ok, text){
+  const msgEl = heroSavedMsg();
+  if (!msgEl) return;
+  msgEl.className = ok ? 'err ok' : 'err';
+  msgEl.textContent = text;
+  msgEl.hidden = false;
+  if (ok) setTimeout(function(){ msgEl.hidden = true; }, 2500);
+}
+function wireHeroCard(card){
+  const id = card.dataset.id;
+  const isDraft = !!(heroDrafts.find(function(d){ return d.id === id; }));
+  card.querySelector('[data-act="save"]').addEventListener('click', function(){ saveHeroSlide(id, card); });
+  const mobileFileInput = card.querySelector('.f-mobile-file');
+  if (mobileFileInput) {
+    mobileFileInput.addEventListener('change', async function(e){
+      const file = e.target.files[0];
+      e.target.value = '';
+      if (!file) return;
+      try {
+        const url = await uploadImage(file, 'hero', 1400, 1400, 240 * 1024);
+        heroPendingMobile[id] = url;
+        reRenderHeroCard(id);
+      } catch (err) {
+        alert('ატვირთვის შეცდომა: ' + friendlyError(err));
+      }
+    });
+  }
+  const removeMobileBtn = card.querySelector('[data-act="remove-mobile"]');
+  if (removeMobileBtn) {
+    removeMobileBtn.addEventListener('click', function(){
+      heroPendingMobile[id] = null;
+      reRenderHeroCard(id);
+    });
+  }
+  card.querySelector('[data-act="delete"]').addEventListener('click', async function(){
+    if (!confirm('წავშალო ეს ფოტო?')) return;
+    const slide = findHeroSlide(id);
+    const pendingMobile = Object.prototype.hasOwnProperty.call(heroPendingMobile, id) ? heroPendingMobile[id] : null;
+    if (isDraft) {
+      heroDrafts = heroDrafts.filter(function(d){ return d.id !== id; });
+      delete heroPendingMobile[id];
+      if (slide) await deleteImage(slide.photo_url);
+      if (pendingMobile) await deleteImage(pendingMobile);
+      renderHero();
+      return;
+    }
+    const { error } = await sb.from('hero_slides').delete().eq('id', id);
+    if (error) { alert(friendlyError(error)); return; }
+    delete heroPendingMobile[id];
+    if (slide) {
+      await deleteImage(slide.photo_url);
+      if (slide.photo_url_mobile) await deleteImage(slide.photo_url_mobile);
+      if (pendingMobile && pendingMobile !== slide.photo_url_mobile) await deleteImage(pendingMobile);
+    }
+    await loadHero();
+  });
+}
+function reRenderHeroCard(id){
+  const root = $('#heroList');
+  const oldCard = $all('.hero-card', root).find(function(c){ return c.dataset.id === id; });
+  if (!oldCard) return;
+  const slide = findHeroSlide(id);
+  if (!slide) return;
+  const view = {
+    id: slide.id,
+    photo_url: slide.photo_url,
+    photo_url_mobile: slide.photo_url_mobile,
+    is_active: oldCard.querySelector('.f-active').checked,
+    alt_ka: oldCard.querySelector('.f-alt-ka').value,
+    alt_en: oldCard.querySelector('.f-alt-en').value,
+    link_url: oldCard.querySelector('.f-link').value,
+    _isDraft: slide._isDraft
+  };
+  const wrap = document.createElement('div');
+  wrap.innerHTML = heroCardHTML(view);
+  const newCard = wrap.firstElementChild;
+  oldCard.replaceWith(newCard);
+  wireHeroCard(newCard);
+}
+async function saveHeroSlide(id, card){
+  const saveBtn = card.querySelector('[data-act="save"]');
+  saveBtn.disabled = true;
+  try {
+    const slide = findHeroSlide(id);
+    const isDraft = !!slide._isDraft;
+    const mobileUrl = Object.prototype.hasOwnProperty.call(heroPendingMobile, id) ? heroPendingMobile[id] : slide.photo_url_mobile;
+    const payload = {
+      alt_ka: card.querySelector('.f-alt-ka').value.trim() || null,
+      alt_en: card.querySelector('.f-alt-en').value.trim() || null,
+      link_url: card.querySelector('.f-link').value.trim() || null,
+      is_active: card.querySelector('.f-active').checked,
+      photo_url_mobile: mobileUrl
+    };
+    if (isDraft) {
+      payload.photo_url = slide.photo_url;
+      payload.sort_order = slide.sort_order;
+      const { error } = await sb.from('hero_slides').insert(payload);
+      if (error) { showHeroSaved(false, friendlyError(error)); return; }
+      heroDrafts = heroDrafts.filter(function(d){ return d.id !== id; });
+      delete heroPendingMobile[id];
+    } else {
+      const { error } = await sb.from('hero_slides').update(payload).eq('id', id);
+      if (error) { showHeroSaved(false, friendlyError(error)); return; }
+      if (slide.photo_url_mobile && slide.photo_url_mobile !== mobileUrl) await deleteImage(slide.photo_url_mobile);
+      delete heroPendingMobile[id];
+    }
+    showHeroSaved(true, 'შენახულია.');
+    await loadHero();
+  } finally {
+    if (saveBtn.isConnected) saveBtn.disabled = false;
+  }
+}
+function heroAddTileHTML(){
+  return (
+    '<label class="hero-card hero-add-tile" id="heroAddTile" title="ახალი ფოტოს დამატება">' +
+      '<span class="hero-add-icon">+</span>' +
+      '<span class="hero-add-text">ახალი ფოტოს დამატება</span>' +
+      '<span class="hero-add-hint">ჩააგდეთ ან აირჩიეთ</span>' +
+      '<input type="file" id="heroAddTileInput" accept="image/jpeg,image/png,image/webp,.heic,.heif" multiple hidden>' +
+    '</label>'
+  );
+}
+function wireHeroAddTile(tile){
+  const input = tile.querySelector('input[type=file]');
+  input.addEventListener('change', function(e){
+    // e.target.files is a LIVE FileList - clearing e.target.value empties
+    // this exact reference too, so copy the files out into a plain array
+    // *before* resetting the input (otherwise handleHeroFilesAdd always
+    // sees zero files and silently no-ops).
+    const files = Array.from(e.target.files || []);
+    e.target.value = '';
+    handleHeroFilesAdd(files);
+  });
+  ['dragenter', 'dragover'].forEach(function(evt){
+    tile.addEventListener(evt, function(e){ e.preventDefault(); tile.classList.add('is-dragover'); });
+  });
+  ['dragleave', 'dragend', 'drop'].forEach(function(evt){
+    tile.addEventListener(evt, function(e){ e.preventDefault(); tile.classList.remove('is-dragover'); });
+  });
+  tile.addEventListener('drop', function(e){
+    const files = Array.from((e.dataTransfer && e.dataTransfer.files) || []);
+    if (files.length) handleHeroFilesAdd(files);
+  });
+}
 function renderHero(){
   const root = $('#heroList');
   if (heroSortable) { heroSortable.destroy(); heroSortable = null; }
-  if (!heroSlides.length) { root.innerHTML = '<p class="empty">ჯერ არცერთი ფოტო არ არის ატვირთული.</p>'; return; }
-  root.innerHTML = heroSlides.map(function(s){
-    return (
-      '<div class="hero-card" data-id="' + s.id + '">' +
-        '<img src="' + esc(s.photo_url) + '" alt="">' +
-        '<div class="hero-card-link">' +
-          '<input type="url" class="f-link" placeholder="ლინკი (არასავალდებულო) — მაგ. https://..." value="' + esc(s.link_url || '') + '">' +
-        '</div>' +
-        '<div class="hero-card-actions">' +
-          '<span class="drag-handle" title="გადათრევით დალაგება">⠿</span>' +
-          '<label class="toggle"><input type="checkbox" class="f-active"' + (s.is_active ? ' checked' : '') + '> აქტიური</label>' +
-          '<button class="btn small danger" data-act="delete">წაშლა</button>' +
-        '</div>' +
-      '</div>'
-    );
-  }).join('');
-  $all('.hero-card', root).forEach(function(card){
-    const id = card.dataset.id;
-    card.querySelector('.f-active').addEventListener('change', async function(e){
-      const { error } = await sb.from('hero_slides').update({ is_active: e.target.checked }).eq('id', id);
-      if (error) { alert(friendlyError(error)); e.target.checked = !e.target.checked; }
-    });
-    card.querySelector('.f-link').addEventListener('change', async function(e){
-      const value = e.target.value.trim();
-      const { error } = await sb.from('hero_slides').update({ link_url: value || null }).eq('id', id);
-      if (error) alert(friendlyError(error));
-    });
-    card.querySelector('[data-act="delete"]').addEventListener('click', async function(){
-      if (!confirm('წავშალო ეს ფოტო?')) return;
-      const slide = heroSlides.find(function(s){ return s.id === id; });
-      const { error } = await sb.from('hero_slides').delete().eq('id', id);
-      if (error) { alert(friendlyError(error)); return; }
-      if (slide) await deleteImage(slide.photo_url);
-      await loadHero();
-    });
-  });
+  const all = heroSlides.concat(heroDrafts);
+  root.innerHTML = (all.length ? all.map(heroCardHTML).join('') : '<p class="empty">ჯერ არცერთი ფოტო არ არის ატვირთული.</p>') + heroAddTileHTML();
+  $all('.hero-card[data-id]', root).forEach(wireHeroCard);
+  wireHeroAddTile($('#heroAddTile', root));
   heroSortable = Sortable.create(root, {
     handle: '.drag-handle',
-    draggable: '.hero-card',
+    draggable: '.hero-card[data-id]',
     animation: 150,
     forceFallback: true,
     onEnd: async function(){
-      const ids = $all('.hero-card', root).map(function(el){ return el.dataset.id; });
+      const ids = $all('.hero-card[data-id]', root).map(function(el){ return el.dataset.id; });
       if (await persistOrder('hero_slides', ids)) await loadHero();
     }
+  });
+}
+async function createHeroDraftFromFile(file){
+  const url = await uploadImage(file, 'hero', 1600, 800, 280 * 1024);
+  const existingMax = heroSlides.concat(heroDrafts).reduce(function(max, s){ return Math.max(max, s.sort_order); }, -1);
+  heroDrafts.push({
+    id: 'new-' + crypto.randomUUID(),
+    photo_url: url,
+    photo_url_mobile: null,
+    alt_ka: '',
+    alt_en: '',
+    link_url: null,
+    is_active: true,
+    sort_order: existingMax + 1,
+    _isDraft: true
   });
 }
 async function handleHeroFileChange(e){
@@ -413,14 +576,23 @@ async function handleHeroFileChange(e){
   e.target.value = '';
   if (!file) return;
   try {
-    const url = await uploadImage(file, 'hero', 1600, 800, 280 * 1024);
-    const sort_order = heroSlides.length ? Math.max.apply(null, heroSlides.map(function(s){ return s.sort_order; })) + 1 : 0;
-    const { error } = await sb.from('hero_slides').insert({ photo_url: url, sort_order: sort_order, is_active: true });
-    if (error) throw error;
-    await loadHero();
+    await createHeroDraftFromFile(file);
+    renderHero();
   } catch (err) {
     alert('ატვირთვის შეცდომა: ' + friendlyError(err));
   }
+}
+async function handleHeroFilesAdd(fileList){
+  const files = Array.from(fileList || []);
+  if (!files.length) return;
+  for (const file of files) {
+    try {
+      await createHeroDraftFromFile(file);
+    } catch (err) {
+      alert('ატვირთვის შეცდომა (' + file.name + '): ' + friendlyError(err));
+    }
+  }
+  renderHero();
 }
 
 /* ---------- partners ---------- */

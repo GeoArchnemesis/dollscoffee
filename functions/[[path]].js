@@ -202,12 +202,12 @@ async function loadRouteData(route, env, request){
     const [sections, products, hero] = await Promise.all([
       sbFetch('sections?select=*&is_visible=eq.true&order=sort_order'),
       sbFetch('products?select=*&is_visible=eq.true&order=sort_order'),
-      sbFetch('hero_slides?select=photo_url&is_active=eq.true&order=sort_order&limit=1')
+      sbFetch('hero_slides?select=*&is_active=eq.true&order=sort_order&limit=1')
     ]);
     if (!sections.length) return null;
     const first = sections[0];
     const products_in_cat = products.filter(function(p){ return p.section_id === first.id; });
-    return { sections, section: first, categorySlug: first.slug, products: products_in_cat, heroImage: (hero[0] && hero[0].photo_url) || null };
+    return { sections, section: first, categorySlug: first.slug, products: products_in_cat, hero: hero[0] || null };
   }
   if (type === 'blogList') {
     return { posts: await sbFetch('blog_posts?select=*&is_published=eq.true&order=published_at.desc') };
@@ -241,9 +241,9 @@ async function loadRouteData(route, env, request){
     const section = sections[0];
     const [products, hero] = await Promise.all([
       sbFetch('products?select=*&is_visible=eq.true&section_id=eq.' + section.id + '&order=sort_order'),
-      sbFetch('hero_slides?select=photo_url&is_active=eq.true&order=sort_order&limit=1')
+      sbFetch('hero_slides?select=*&is_active=eq.true&order=sort_order&limit=1')
     ]);
-    return { section, categorySlug: section.slug, products, heroImage: (hero[0] && hero[0].photo_url) || null };
+    return { section, categorySlug: section.slug, products, hero: hero[0] || null };
   }
   return null;
 }
@@ -259,7 +259,7 @@ function buildMeta(route, data){
 
   if (type === 'home') {
     // keep the static shell's own homepage <title>/description untouched - no column backs these
-    ogImage = data.heroImage || null;
+    ogImage = (data.hero && data.hero.photo_url) || null;
   } else if (type === 'blogList') {
     title = STR[lang].blogTitle + ' | ' + base;
   } else if (type === 'post') {
@@ -286,7 +286,7 @@ function buildMeta(route, data){
     description = lang === 'ka'
       ? truncate(s.name_ka + ' — მაღალხარისხიანი არჩევანი Doll\'s Coffee-სგან, AVEK-ის ოფიციალური პარტნიორი საქართველოში.', 160)
       : truncate(s.name_en + ' — a premium selection from Doll\'s Coffee, official AVEK partner in Georgia.', 160);
-    ogImage = data.heroImage || null;
+    ogImage = (data.hero && data.hero.photo_url) || null;
   }
   return { title, description, ogImage, selfUrl, kaUrl, enUrl };
 }
@@ -304,7 +304,7 @@ function buildRewriter(route, data, meta){
   if (meta.title) rw = rw.on('meta[property="og:title"]', { element(el){ el.setAttribute('content', meta.title); } });
   rw = rw.on('meta[property="og:url"]', { element(el){ el.setAttribute('content', meta.selfUrl); } });
   rw = rw.on('link[rel="canonical"]', { element(el){ el.setAttribute('href', meta.selfUrl); } });
-  if ((type === 'home' || type === 'category') && data.heroImage) {
+  if ((type === 'home' || type === 'category') && data.hero) {
     /* the hero slider's image is set via JS (style.backgroundImage) after
        fetchSiteData()'s Supabase round-trip completes, so the browser's
        preload scanner - which only looks at raw HTML, before any JS runs -
@@ -315,9 +315,17 @@ function buildRewriter(route, data, meta){
        parallel with script.js loading/running, so by the time JS sets the
        background-image style, the browser serves it from cache instantly.
        prepend (not append) - this needs to be as early in <head> as
-       possible for the preload scanner to find it fastest. */
+       possible for the preload scanner to find it fastest.
+       Two links, each gated by the SAME media breakpoint the CSS/<source>
+       use - the browser's preload scanner only actually fetches the one
+       whose media query currently matches, so mobile never pulls the
+       desktop image (or vice versa). No mobile image for this slide ->
+       the mobile-media link just points at the same desktop URL (correct,
+       matches the <picture> fallback-to-desktop behavior exactly). */
+    const mobileHref = data.hero.photo_url_mobile || data.hero.photo_url;
     rw = rw.on('head', { element(el){
-      el.prepend('<link rel="preload" as="image" fetchpriority="high" href="' + esc(data.heroImage) + '">', { html: true });
+      el.prepend('<link rel="preload" as="image" fetchpriority="high" media="(min-width:641px)" href="' + esc(data.hero.photo_url) + '">', { html: true });
+      el.prepend('<link rel="preload" as="image" fetchpriority="high" media="(max-width:640px)" href="' + esc(mobileHref) + '">', { html: true });
     } });
   }
   rw = rw.on('head', { element(el){
@@ -340,7 +348,7 @@ function buildRewriter(route, data, meta){
   });
 
   if (type === 'home' || type === 'category') {
-    if (data.heroImage) {
+    if (data.hero) {
       /* the preload link alone only gets the image BYTES ready early - the
          browser still won't PAINT it until something actually applies it
          to an element, which otherwise only happens after client JS
@@ -354,9 +362,15 @@ function buildRewriter(route, data, meta){
          fetchSiteData() resolves, so this is purely a first-paint value -
          seamlessly replaced moments later by the identical client render,
          not a lasting fork of this markup. Shared by 'home' and 'category'
-         since the hero slider itself is sitewide, not category-specific. */
-      const heroHtml = "<div class=\"hero-slide active\" style=\"background-image:url('" + data.heroImage + "');background-size:cover;background-position:center;\"></div>";
-      rw = rw.on('#heroSlides', { element(el){ el.setInnerContent(heroHtml, { html: true }); } });
+         since the hero slider itself is sitewide, not category-specific.
+         Same <picture>/<source> art-direction shape as renderHero() - no
+         mobile image for this slide -> no <source>, the <img>'s desktop
+         src applies at every viewport (the fallback). */
+      const h = data.hero;
+      const alt = esc(h['alt_' + lang] || '');
+      const source = h.photo_url_mobile ? '<source media="(max-width:640px)" srcset="' + esc(h.photo_url_mobile) + '">' : '';
+      const heroHtml = '<picture>' + source + '<img src="' + esc(h.photo_url) + '" alt="' + alt + '" fetchpriority="high" loading="eager"></picture>';
+      rw = rw.on('#heroSlides', { element(el){ el.setInnerContent('<div class="hero-slide active">' + heroHtml + '</div>', { html: true }); } });
     }
     // shown for 'home' too (default/first category's name - whichever tab is
     // effectively active), not just dedicated 'category' routes - keeps the

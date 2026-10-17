@@ -70,21 +70,20 @@
 </header>
 <main id="main-content">
 <section class="page show" id="page-home">
-  <div class="hero" id="hero" role="region" aria-label="ბრენდის ფოტოები">
-    <div class="hero-slides" id="heroSlides"></div>
-    <div class="hero-overlay">
-      <!-- <h1 id="heroH1" data-t="heroH1">პრემიუმ ყავა, შოკოლადი და ჩაი</h1>
-      <p id="heroSub" data-t="heroSub">AVEK-ის (საბერძნეთი) ოფიციალური პარტნიორი საქართველოში — 100% არაბიკა და ხელით შერჩეული ბლენდები.</p> -->
-      <div class="hero-cta">
-        <button class="btn solid tap" onclick="scrollToProducts()" data-t="heroCta1">იხილეთ პროდუქცია</button>
-        <a class="btn ghost tap" href="/contact" onclick="event.preventDefault();go('contact')" data-t="heroCta2">პარტნიორობა/კონტაქტი</a>
+  <div class="hero-block">
+    <div class="hero" id="hero" role="region" aria-label="ბრენდის ფოტოები">
+      <div class="hero-slides" id="heroSlides"></div>
+      <div class="hero-overlay">
+        <!-- <h1 id="heroH1" data-t="heroH1">პრემიუმ ყავა, შოკოლადი და ჩაი</h1>
+        <p id="heroSub" data-t="heroSub">AVEK-ის (საბერძნეთი) ოფიციალური პარტნიორი საქართველოში — 100% არაბიკა და ხელით შერჩეული ბლენდები.</p> -->
       </div>
+      <button class="hero-arrow prev" onclick="heroStep(-1)" aria-label="წინა ფოტო"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg></button>
+      <button class="hero-arrow next" onclick="heroStep(1)" aria-label="შემდეგი ფოტო"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg></button>
+      <div class="hero-dots" id="heroDots"></div>
     </div>
-    <button class="hero-arrow prev" onclick="heroStep(-1)" aria-label="წინა ფოტო"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg></button>
-    <button class="hero-arrow next" onclick="heroStep(1)" aria-label="შემდეგი ფოტო"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg></button>
-    <div class="hero-dots" id="heroDots"></div>
+    <a class="btn ghost tap hero-contact-cta" href="/contact" onclick="event.preventDefault();go('contact')" data-t="heroCta2">პარტნიორობა/კონტაქტი</a>
   </div>
-  <div class="wrap section-head"><h1 id="cat-title"></h1></div>
+  <div class="wrap"><h1 id="cat-title" class="visually-hidden"></h1></div>
   <div class="wrap selector">
     <div class="cats"></div>
   </div>

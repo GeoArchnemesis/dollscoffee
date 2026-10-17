@@ -84,7 +84,7 @@ const T = {
     footTbilisiHeading:'საქართველო, თბილისი',footTbilisiAddress:'ვასილ კოპცოვის 34ბ',footAthensHeading:'საბერძნეთი, ათენი',
     heroH1:'პრემიუმ ყავა, შოკოლადი და ჩაი',
     heroSub:'AVEK-ის (საბერძნეთი) ოფიციალური პარტნიორი საქართველოში — 100% არაბიკა და ხელით შერჩეული ბლენდები.',
-    heroCta1:'იხილეთ პროდუქცია',heroCta2:'პარტნიორობა/კონტაქტი',
+    heroCta2:'პარტნიორობა/კონტაქტი',
     partnersEyebrow:'პარტნიორობა',partnersTitle:'პარტნიორი კომპანიები',
     heroPlaceholder:'ფოტო მალე დაემატება', emptyProducts:'მალე დაემატება ახალი პროდუქტები', emptyBlog:'ბლოგის პირველი პოსტი მალე გამოქვეყნდება'},
   en:{home:'Home',blog:'Blog',contact:'Contact',about:'About Us',coffee:'Coffee',chocolate:'Chocolate',tea:'Tea',viewProduct:'Product details',
@@ -98,7 +98,7 @@ const T = {
     footTbilisiHeading:'Georgia, Tbilisi',footTbilisiAddress:'34b Vasil Koptsovi St',footAthensHeading:'Greece, Athens',
     heroH1:'Premium Coffee, Chocolate & Tea',
     heroSub:'Official partner of AVEK (Greece) in Georgia — 100% Arabica and hand-selected blends.',
-    heroCta1:'View Products',heroCta2:'Partnership / Contact',
+    heroCta2:'Partnership / Contact',
     partnersEyebrow:'Partnership',partnersTitle:'Partner Companies',
     heroPlaceholder:'Photo coming soon', emptyProducts:'New products coming soon', emptyBlog:'The first blog post is coming soon'}
 };
@@ -269,12 +269,19 @@ function renderHero(){
   }
   if(heroEl) heroEl.hidden = false;
   slidesEl.innerHTML = HERO.map(function(s,i){
-    const bgStyle = "background-image:url('"+s.photo_url+"');background-size:cover;background-position:center;";
     const activeClass = i===0 ? ' active' : '';
+    const alt = esc(s['alt_'+lang] || '');
+    // mobile <source> only when a real square image was uploaded for this
+    // slide - omitting it entirely is the fallback: the <img>'s own desktop
+    // src then applies at every viewport, exactly like today for any slide
+    // that never gets a mobile image.
+    const source = s.photo_url_mobile ? '<source media="(max-width:640px)" srcset="'+esc(s.photo_url_mobile)+'">' : '';
+    const imgAttrs = i===0 ? 'fetchpriority="high" loading="eager"' : 'loading="lazy"';
+    const pictureHtml = '<picture>'+source+'<img src="'+esc(s.photo_url)+'" alt="'+alt+'" '+imgAttrs+'></picture>';
     if(s.link_url){
-      return '<a class="hero-slide'+activeClass+'" style="'+bgStyle+'" href="'+esc(s.link_url)+'" target="_blank" rel="noopener noreferrer"></a>';
+      return '<a class="hero-slide'+activeClass+'" href="'+esc(s.link_url)+'" target="_blank" rel="noopener noreferrer">'+pictureHtml+'</a>';
     }
-    return '<div class="hero-slide'+activeClass+'" style="'+bgStyle+'"></div>';
+    return '<div class="hero-slide'+activeClass+'">'+pictureHtml+'</div>';
   }).join('');
   if(dotsEl){
     dotsEl.innerHTML = HERO.map(function(_,i){
@@ -309,16 +316,13 @@ function renderPartners(){
       : '<span class="partner-item">'+inner+'</span>';
   }).join('');
 }
-function scrollToProducts(){
-  const el = document.getElementById('list-section');
-  if(el) el.scrollIntoView({behavior:'smooth', block:'start'});
-}
 function heroStep(dir){ setHeroSlide(heroIndex+dir); startHeroRotation(); }
 function goToHeroSlide(i){ setHeroSlide(i); startHeroRotation(); }
 function startHeroRotation(){
   clearInterval(heroTimer);
   if(HERO.length < 2) return;
   if(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  if(window.matchMedia && window.matchMedia('(max-width:640px)').matches) return; // no autoplay on mobile - manual swipe/arrows/dots still work
   heroTimer=setInterval(function(){ setHeroSlide(heroIndex+1); }, 5000);
 }
 
@@ -933,5 +937,9 @@ function renderFooterLocationsSkeleton(){
   if(heroEl){
     heroEl.addEventListener('mouseenter', function(){ clearInterval(heroTimer); });
     heroEl.addEventListener('mouseleave', function(){ startHeroRotation(); });
+    heroEl.addEventListener('keydown', function(e){
+      if(e.key==='ArrowLeft'){ e.preventDefault(); heroStep(-1); }
+      else if(e.key==='ArrowRight'){ e.preventDefault(); heroStep(1); }
+    });
   }
 })();
