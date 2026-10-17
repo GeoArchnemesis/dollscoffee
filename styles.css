@@ -94,9 +94,9 @@ html[data-theme="dark"] .theme-toggle .sun{display:block}
 .hero-arrow{position:absolute;top:50%;transform:translateY(-50%);width:42px;height:42px;border-radius:50%;background:rgba(0,0,0,.35);color:#fff;border:0;cursor:pointer;display:grid;place-items:center;z-index:3;backdrop-filter:blur(3px)}
 .hero-arrow:hover{background:rgba(0,0,0,.55)}
 .hero-arrow.prev{left:12px}.hero-arrow.next{right:12px}
-.hero-dots{position:absolute;left:0;right:0;bottom:12px;display:flex;gap:7px;justify-content:center;z-index:3}
-.hero-dots button{width:8px;height:8px;border-radius:50%;border:0;background:rgba(255,255,255,.5);cursor:pointer;padding:0;transition:.2s}
-.hero-dots button.on{background:#fff;width:22px;border-radius:5px}
+.hero-dots{position:absolute;left:0;right:0;bottom:6px;display:flex;gap:7px;justify-content:center;z-index:3}
+.hero-dots button{width:8px;height:8px;border-radius:50%;border:0;background:rgba(255,255,255,.3);cursor:pointer;padding:0;transition:.2s;box-shadow:0 1px 3px rgba(0,0,0,.35)}
+.hero-dots button.on{background:rgba(255,255,255,.75);width:22px;border-radius:5px}
 @media (prefers-reduced-motion:reduce){.hero-slide{transition:none}}
 @media (max-width:640px){
   .hero-arrow{width:44px;height:44px}
