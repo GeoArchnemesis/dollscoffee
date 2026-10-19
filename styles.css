@@ -84,7 +84,6 @@ html[data-theme="dark"] .theme-toggle .sun{display:block}
 @media (min-width:641px){
   .hero{aspect-ratio:16/7}
 }
-.hero::after{content:'';position:absolute;inset:0;z-index:1;pointer-events:none;background:linear-gradient(180deg,rgba(20,14,10,.04) 0%,rgba(20,14,10,.12) 35%,rgba(20,14,10,.5) 65%,rgba(20,14,10,.82) 100%)}
 .hero-slides{position:absolute;inset:0}
 .hero-slide{position:absolute;inset:0;opacity:0;pointer-events:none;transition:opacity 1.2s ease;display:flex;align-items:flex-start;justify-content:flex-start;padding:16px}
 .hero-slide.active{opacity:1;pointer-events:auto}
