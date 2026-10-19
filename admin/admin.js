@@ -191,85 +191,24 @@ async function handleLogout(){
   showLogin();
 }
 
-/* ---------- images: compress in-browser, then upload ---------- */
-
-/* decode the file to a <canvas>, scaled to fit maxWidth×maxHeight (never
-   upscaling). Prefers createImageBitmap with imageOrientation:'from-image'
-   so EXIF-rotated phone photos come out right-side-up; falls back to the
-   old new Image() decode (no auto-rotation, but never blocks the upload)
-   if createImageBitmap throws on an unusual file. */
-async function decodeToCanvas(file, maxWidth, maxHeight){
-  let bitmap = null;
-  try {
-    bitmap = await createImageBitmap(file, { imageOrientation: 'from-image' });
-  } catch (e) {
-    bitmap = null;
-  }
-  if (bitmap) {
-    const ratio = Math.min(1, maxWidth / bitmap.width, maxHeight / bitmap.height);
-    const w = Math.round(bitmap.width * ratio);
-    const h = Math.round(bitmap.height * ratio);
-    const canvas = document.createElement('canvas');
-    canvas.width = w; canvas.height = h;
-    canvas.getContext('2d').drawImage(bitmap, 0, 0, w, h);
-    bitmap.close();
-    return canvas;
-  }
-  return new Promise(function(resolve, reject){
-    const img = new Image();
-    const url = URL.createObjectURL(file);
-    img.onload = function(){
-      const ratio = Math.min(1, maxWidth / img.width, maxHeight / img.height);
-      const w = Math.round(img.width * ratio);
-      const h = Math.round(img.height * ratio);
-      const canvas = document.createElement('canvas');
-      canvas.width = w; canvas.height = h;
-      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-      URL.revokeObjectURL(url);
-      resolve(canvas);
-    };
-    img.onerror = function(){ URL.revokeObjectURL(url); reject(new Error('სურათის წაკითხვა ვერ მოხერხდა')); };
-    img.src = url;
-  });
-}
-function canvasToWebp(canvas, quality){
-  return new Promise(function(resolve, reject){
-    canvas.toBlob(function(blob){
-      if (!blob) { reject(new Error('სურათის დამუშავება ვერ მოხერხდა')); return; }
-      resolve(blob);
-    }, 'image/webp', quality);
-  });
-}
-/* target-file-size loop: start at the highest quality and only step down if
-   still over budget, stopping at the floor (0.55) even if still over -
-   protects visual quality over hitting the budget exactly. */
-const COMPRESS_QUALITY_STEPS = [0.85, 0.75, 0.65, 0.55];
-async function compressImage(file, maxWidth, maxHeight, targetBytes){
-  const canvas = await decodeToCanvas(file, maxWidth, maxHeight);
-  let blob = null;
-  for (let i = 0; i < COMPRESS_QUALITY_STEPS.length; i++) {
-    blob = await canvasToWebp(canvas, COMPRESS_QUALITY_STEPS[i]);
-    if (!targetBytes || blob.size <= targetBytes) break;
-  }
-  return blob;
-}
+/* ---------- images: upload as-is (no resize/recompression) ---------- */
 
 /* HEIC/HEIF: some browsers report an empty file.type for these, so check
    the extension too. Converted client-side to JPEG via heic2any (CDN,
-   no build step) before entering the normal compression pipeline. */
+   no build step) since browsers can't display HEIC natively. */
 function isHeicFile(file){
   return /image\/hei(c|f)/i.test(file.type) || /\.(heic|heif)$/i.test(file.name || '');
 }
 async function convertHeicToJpeg(file){
   try {
-    const result = await heic2any({ blob: file, toType: 'image/jpeg', quality: 0.92 });
+    const result = await heic2any({ blob: file, toType: 'image/jpeg', quality: 1 });
     return Array.isArray(result) ? result[0] : result;
   } catch (e) {
     throw new Error('HEIC ფაილის დამუშავება ვერ მოხერხდა');
   }
 }
 
-async function uploadImage(file, folder, maxW, maxH, targetBytes){
+async function uploadImage(file, folder){
   if (file.size > 20 * 1024 * 1024) {
     throw new Error('ფაილის ზომა არ უნდა აღემატებოდეს 20MB-ს');
   }
@@ -278,18 +217,13 @@ async function uploadImage(file, folder, maxW, maxH, targetBytes){
   } else if (!/^image\/(jpeg|png|webp)$/.test(file.type)) {
     throw new Error('მხოლოდ JPEG, PNG ან WebP ფაილებია დაშვებული');
   }
-  const blob = await compressImage(file, maxW, maxH, targetBytes);
-  // canvas.toBlob() silently falls back to PNG if the browser can't encode
-  // WebP - never upload PNG bytes under a .webp label.
-  const isWebp = blob.type === 'image/webp';
-  const ext = isWebp ? 'webp' : 'png';
-  const contentType = isWebp ? 'image/webp' : 'image/png';
+  const extByType = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp' };
+  const ext = extByType[file.type] || 'jpg';
   const path = folder + '/' + crypto.randomUUID() + '.' + ext;
   // every path is a fresh random UUID (upsert: false, never overwritten) -
   // content-addressed in effect, so a long cache lifetime is safe; this is
-  // the Cache-Control: max-age the browser/CDN will serve it with (Lighthouse
-  // flagged the previous 1h default as leaving savings on repeat visits).
-  const { error } = await sb.storage.from('media').upload(path, blob, { contentType: contentType, upsert: false, cacheControl: '31536000' });
+  // the Cache-Control: max-age the browser/CDN will serve it with.
+  const { error } = await sb.storage.from('media').upload(path, file, { contentType: file.type, upsert: false, cacheControl: '31536000' });
   if (error) throw error;
   const { data } = sb.storage.from('media').getPublicUrl(path);
   return data.publicUrl;
@@ -413,7 +347,7 @@ function wireHeroCard(card){
       e.target.value = '';
       if (!file) return;
       try {
-        const url = await uploadImage(file, 'hero', 1400, 1400, 240 * 1024);
+        const url = await uploadImage(file, 'hero');
         heroPendingMobile[id] = url;
         reRenderHeroCard(id);
       } catch (err) {
@@ -557,7 +491,7 @@ function renderHero(){
   });
 }
 async function createHeroDraftFromFile(file){
-  const url = await uploadImage(file, 'hero', 1600, 800, 280 * 1024);
+  const url = await uploadImage(file, 'hero');
   const existingMax = heroSlides.concat(heroDrafts).reduce(function(max, s){ return Math.max(max, s.sort_order); }, -1);
   heroDrafts.push({
     id: 'new-' + crypto.randomUUID(),
@@ -659,7 +593,7 @@ async function handlePartnerFileChange(e){
   e.target.value = '';
   if (!file) return;
   try {
-    const url = await uploadImage(file, 'partners', 400, 200, 120 * 1024);
+    const url = await uploadImage(file, 'partners');
     const sort_order = partners.length ? Math.max.apply(null, partners.map(function(p){ return p.sort_order; })) + 1 : 0;
     const { error } = await sb.from('partners').insert({ logo_url: url, sort_order: sort_order, is_visible: true });
     if (error) throw error;
@@ -949,7 +883,7 @@ function openProductModal(product, presetSectionId){
       let photo_url = (product && product.photo_url) || null;
       const file = $('#pfPhoto').files[0];
       if (file) {
-        const newUrl = await uploadImage(file, 'products', 1200, 1500, 180 * 1024);
+        const newUrl = await uploadImage(file, 'products');
         if (product && product.photo_url) await deleteImage(product.photo_url);
         photo_url = newUrl;
       }
@@ -1101,7 +1035,7 @@ function attachQuillImageHandler(quill){
       if (!file) return;
       const range = quill.getSelection(true);
       try {
-        const url = await uploadImage(file, 'blog-inline', 1400, 1400, 220 * 1024);
+        const url = await uploadImage(file, 'blog-inline');
         quill.insertEmbed(range.index, 'image', url, 'user');
         quill.setSelection(range.index + 1);
       } catch (err) {
@@ -1205,7 +1139,7 @@ function openBlogModal(post){
       let cover_photo_url = (post && post.cover_photo_url) || null;
       const file = $('#bpCover').files[0];
       if (file) {
-        const newUrl = await uploadImage(file, 'blog', 1200, 630, 180 * 1024);
+        const newUrl = await uploadImage(file, 'blog');
         if (post && post.cover_photo_url) await deleteImage(post.cover_photo_url);
         cover_photo_url = newUrl;
       }
