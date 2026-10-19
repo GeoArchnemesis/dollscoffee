@@ -109,7 +109,7 @@ html[data-theme="dark"] .theme-toggle .sun{display:block}
 .hero-overlay{position:absolute;inset:0;z-index:2;display:flex;flex-direction:column;justify-content:flex-end;align-items:flex-start;gap:8px;padding:20px 24px 34px;pointer-events:none;max-width:100%}
 .hero-overlay h1{color:#fff;font-size:clamp(22px,3.4vw,38px);line-height:1.12;text-shadow:0 4px 20px rgba(0,0,0,.4);max-width:24ch}
 .hero-overlay p{margin:0;color:rgba(255,255,255,.92);font-family:var(--sans);font-size:clamp(13px,1.3vw,16px);max-width:60ch;text-shadow:0 2px 10px rgba(0,0,0,.4)}
-.hero-contact-cta{position:absolute;left:24px;bottom:34px;z-index:2;min-height:40px;padding:11px 20px;font-size:14px}
+.hero-contact-cta{position:absolute;left:24px;bottom:16px;z-index:2;min-height:40px;padding:11px 20px;font-size:14px}
 .btn.ghost{border-color:rgba(255,255,255,.9);color:#fff;background:rgba(20,14,10,.45);backdrop-filter:blur(4px)}
 @media (hover:hover) and (pointer:fine){.btn.ghost:hover{background:rgba(20,14,10,.65)}}
 @media (max-width:639px){
